@@ -1,0 +1,36 @@
+type Query {
+  products(first: Int): ProductConnection
+  shop: Shop
+}
+
+type ProductConnection {
+  nodes: [Product!]!
+}
+
+type Product {
+  id: ID!
+  title: String!
+  barcode: String
+}
+
+type Shop {
+  name: String!
+}
+
+type Mutation {
+  productCreate(input: ProductInput!): ProductCreatePayload
+}
+
+input ProductInput {
+  title: String!
+}
+
+type ProductCreatePayload {
+  product: Product
+  userErrors: [UserError!]!
+}
+
+type UserError {
+  field: [String!]
+  message: String!
+}

@@ -1,0 +1,28 @@
+# scry project manifest
+# See https://github.com/dusk-indust/scry for documentation
+
+name: my-project
+root: .
+platform: shopify
+
+# Inventory extraction settings
+api_version_source: "shopify.app.toml:webhooks.api_version"
+source_patterns:
+  - "app/**/*.ts"
+  - "app/**/*.tsx"
+graphql_tag: "#graphql"
+dependency_prefixes:
+  - "@shopify/"
+# component_tag_pattern: "<s-"
+# webhook_config_path: "shopify.app.toml"
+
+# Severity overrides
+escalation_rules: []
+
+# Collect settings
+# changelog_rss_url: "https://shopify.dev/changelog/feed.xml"
+# changelog_page_urls: []
+# schema_base_url: "https://shopify.dev/admin-graphql"
+
+# Report output
+report_dir: "docs/api-changes"

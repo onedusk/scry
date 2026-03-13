@@ -1,0 +1,19 @@
+client_id = "test-client-id"
+
+[access_scopes]
+scopes = "write_products,read_orders"
+
+[webhooks]
+api_version = "2024-10"
+
+[[webhooks.subscriptions]]
+topics = ["app/uninstalled"]
+uri = "/webhooks/app/uninstalled"
+
+[[webhooks.subscriptions]]
+topics = ["app/scopes_update"]
+uri = "/webhooks/app/scopes_update"
+
+[[webhooks.subscriptions]]
+compliance_topics = ["customers/data_request", "customers/redact"]
+uri = "/webhooks/compliance"

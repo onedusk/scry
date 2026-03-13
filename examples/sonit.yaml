@@ -1,0 +1,22 @@
+name: sonit
+root: /Users/macadelic/dusk-indust/company/sandbox/dl_dev/experiments/_shopify_/sonit
+platform: shopify
+
+# Inventory extraction
+api_version_source: "shopify.app.toml:webhooks.api_version"
+source_patterns:
+  - "app/**/*.ts"
+  - "app/**/*.tsx"
+graphql_tag: "#graphql"
+dependency_prefixes:
+  - "@shopify/"
+webhook_config_path: "shopify.app.toml"
+
+# Severity overrides
+escalation_rules: []
+
+# Collect settings
+changelog_rss_url: "https://shopify.dev/changelog/feed.xml"
+
+# Report output
+report_dir: "docs/api-changes"

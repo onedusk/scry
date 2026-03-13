@@ -1,0 +1,6 @@
+# Missing required 'name' field
+root: /tmp/diode
+platform: shopify
+api_version_source: "shopify.app.toml:webhooks.api_version"
+source_patterns:
+  - "app/**/*.ts"

@@ -1,0 +1,13 @@
+{
+  "name": "diode",
+  "dependencies": {
+    "@shopify/polaris": "^12.0.0",
+    "@shopify/shopify-app-remix": "^3.0.0",
+    "@remix-run/react": "^2.0.0",
+    "react": "^18.0.0"
+  },
+  "devDependencies": {
+    "@shopify/api-codegen-preset": "^1.0.0",
+    "typescript": "^5.0.0"
+  }
+}

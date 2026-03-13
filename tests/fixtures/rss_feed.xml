@@ -1,0 +1,53 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<rss version="2.0">
+<channel>
+  <title>Shopify Changelog</title>
+  <link>https://shopify.dev/changelog</link>
+  <description>Latest changes to the Shopify platform</description>
+
+  <item>
+    <title>productVariantsBulkUpdate input type changes in 2026-07</title>
+    <link>https://shopify.dev/changelog/product-variants-bulk-update-input-change</link>
+    <description><![CDATA[The variants argument now requires an explicit sku field.]]></description>
+    <pubDate>Thu, 01 Jan 2026 00:00:00 GMT</pubDate>
+    <category>Action Required</category>
+    <category>Breaking API Change</category>
+    <category>2026-07</category>
+  </item>
+
+  <item>
+    <title>GraphQL Admin API deprecation: Product.barcode field</title>
+    <link>https://shopify.dev/changelog/product-barcode-deprecation</link>
+    <description><![CDATA[The Product.barcode field is deprecated and will be removed in 2026-10.]]></description>
+    <pubDate>Mon, 15 Dec 2025 12:00:00 GMT</pubDate>
+    <category>Deprecation Announcement</category>
+    <category>2026-10</category>
+  </item>
+
+  <item>
+    <title>New fulfillment tracking API</title>
+    <link>https://shopify.dev/changelog/new-fulfillment-tracking</link>
+    <description><![CDATA[A new API for tracking fulfillment status is now available.]]></description>
+    <pubDate>Wed, 10 Dec 2025 09:00:00 GMT</pubDate>
+    <category>New</category>
+  </item>
+
+  <item>
+    <title>Webhook delivery improvements</title>
+    <link>https://shopify.dev/changelog/webhook-delivery-improvements</link>
+    <description><![CDATA[Webhook delivery reliability has been improved with automatic retries.]]></description>
+    <pubDate>Tue, 01 Dec 2025 08:00:00 GMT</pubDate>
+    <category>Update</category>
+  </item>
+
+  <item>
+    <title>OAuth scope requirements update for 2026-04</title>
+    <link>https://shopify.dev/changelog/oauth-scope-update-2026-04</link>
+    <description><![CDATA[New scope requirements for accessing customer data starting 2026-04.]]></description>
+    <pubDate>Sat, 15 Nov 2025 10:00:00 GMT</pubDate>
+    <category>Action Required</category>
+    <category>2026-04</category>
+  </item>
+
+</channel>
+</rss>

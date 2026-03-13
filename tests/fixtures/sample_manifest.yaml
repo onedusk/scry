@@ -1,0 +1,29 @@
+name: diode
+root: /tmp/diode
+platform: shopify
+
+api_version_source: "shopify.app.toml:webhooks.api_version"
+source_patterns:
+  - "app/**/*.ts"
+  - "app/**/*.tsx"
+graphql_tag: "#graphql"
+dependency_prefixes:
+  - "@shopify/"
+component_tag_pattern: "<s-"
+webhook_config_path: "shopify.app.toml"
+
+changelog_rss_url: "https://shopify.dev/changelog/feed.xml"
+schema_base_url: "https://shopify.dev/admin-graphql"
+
+escalation_rules:
+  - pattern: "productVariantsBulkUpdate|barcode|shadowBarcode"
+    floor: critical
+    reason: "Core barcode sync path"
+  - pattern: "PRODUCTS_UPDATE|webhook"
+    floor: high
+    reason: "Webhook processing pipeline"
+  - pattern: "@shopify/shopify-app-react-router"
+    floor: medium
+    reason: "Framework dependency"
+
+report_dir: "docs/api-changes"
