@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 scry — a Python CLI tool and library that detects API platform changes affecting your projects, scores their impact, and generates change plans for review. Project-agnostic by design; configured per-target via YAML/TOML manifest files.
 
-**Status:** Pre-implementation. `stage-1-design-pack.md` contains the full architecture and data model.
+**Status:** Implemented. CLI runs end-to-end (`scry run`); all four pipeline modules (`collect/`, `inventory/`, `diff/`, `report/`) are present. See README for usage.
 
 ## Architecture
 
