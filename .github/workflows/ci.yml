@@ -29,4 +29,8 @@ jobs:
         run: uv run pyright scry/
 
       - name: Pytest
+        # typer/rich force ANSI output when GITHUB_ACTIONS is set, which breaks
+        # CLI help-text assertions; a dumb terminal keeps captured output plain.
+        env:
+          TERM: dumb
         run: uv run pytest -q
