@@ -7,7 +7,7 @@ import re
 import ssl
 from calendar import timegm
 from datetime import datetime, timezone
-from typing import Any
+from typing import Any, cast
 from urllib.request import HTTPSHandler
 
 import certifi
@@ -61,7 +61,10 @@ class RssCollector:
         if config.changelog_rss_url is None:
             return []
 
-        d: Any = feedparser.parse(config.changelog_rss_url, handlers=[_HTTPS_HANDLER])  # pyright: ignore[reportUnknownMemberType]
+        d = cast(
+            Any,
+            feedparser.parse(config.changelog_rss_url, handlers=[_HTTPS_HANDLER]),  # pyright: ignore[reportUnknownMemberType]
+        )
 
         if d.bozo:
             logger.warning(
