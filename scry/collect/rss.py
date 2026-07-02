@@ -13,12 +13,12 @@ from urllib.request import HTTPSHandler
 import certifi
 import feedparser  # type: ignore[import-untyped]
 
-_SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
-_HTTPS_HANDLER = HTTPSHandler(context=_SSL_CONTEXT)
-
 from scry.models.changes import ChangeRecord
 from scry.models.config import ProjectConfig
 from scry.models.enums import ChangeCategory, ChangeSource
+
+_SSL_CONTEXT = ssl.create_default_context(cafile=certifi.where())
+_HTTPS_HANDLER = HTTPSHandler(context=_SSL_CONTEXT)
 
 logger = logging.getLogger(__name__)
 
