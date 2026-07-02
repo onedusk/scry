@@ -19,9 +19,7 @@ def _make_config(
     with_package_json: bool = True,
 ) -> ProjectConfig:
     if with_package_json:
-        (tmp_path / "package.json").write_text(
-            (FIXTURES_DIR / "sample_package.json").read_text()
-        )
+        (tmp_path / "package.json").write_text((FIXTURES_DIR / "sample_package.json").read_text())
     return ProjectConfig(
         name="test",
         root=tmp_path,
@@ -45,7 +43,9 @@ class _MockResponse:
     def raise_for_status(self) -> None:
         if self.status_code >= 400:
             raise httpx.HTTPStatusError(
-                "error", request=httpx.Request("GET", "https://test"), response=self  # type: ignore[arg-type]
+                "error",
+                request=httpx.Request("GET", "https://test"),
+                response=self,  # type: ignore[arg-type]
             )
 
 

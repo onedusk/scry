@@ -8,9 +8,7 @@ from scry.models.surface import AppSurface
 
 
 class TestComponentExtractor:
-    def test_extracts_web_components(
-        self, inventory_project_root: ProjectConfig
-    ) -> None:
+    def test_extracts_web_components(self, inventory_project_root: ProjectConfig) -> None:
         """Extracts <s-*> web component tags from source files."""
         surface = AppSurface(api_version="")
         extractor = ComponentExtractor()
@@ -18,9 +16,7 @@ class TestComponentExtractor:
         assert "s-card" in result.ui_components
         assert "s-button" in result.ui_components
 
-    def test_extracts_polaris_react_imports(
-        self, inventory_project_root: ProjectConfig
-    ) -> None:
+    def test_extracts_polaris_react_imports(self, inventory_project_root: ProjectConfig) -> None:
         """Extracts named imports from @shopify/polaris."""
         surface = AppSurface(api_version="")
         extractor = ComponentExtractor()
@@ -33,8 +29,8 @@ class TestComponentExtractor:
         """Components appearing in multiple files are listed once."""
         app_dir = tmp_path / "app"
         app_dir.mkdir()
-        (app_dir / "a.tsx").write_text('<s-card>hello</s-card>\n')
-        (app_dir / "b.tsx").write_text('<s-card>world</s-card>\n')
+        (app_dir / "a.tsx").write_text("<s-card>hello</s-card>\n")
+        (app_dir / "b.tsx").write_text("<s-card>world</s-card>\n")
         config = ProjectConfig(
             name="test",
             root=tmp_path,
@@ -69,9 +65,7 @@ class TestComponentExtractor:
         assert "Page" in result.ui_components
         assert "s-card" not in result.ui_components
 
-    def test_handles_both_patterns_in_one_file(
-        self, inventory_project_root: ProjectConfig
-    ) -> None:
+    def test_handles_both_patterns_in_one_file(self, inventory_project_root: ProjectConfig) -> None:
         """A file with both web components and React imports extracts all."""
         surface = AppSurface(api_version="")
         extractor = ComponentExtractor()
@@ -84,12 +78,7 @@ class TestComponentExtractor:
         app_dir = tmp_path / "app"
         app_dir.mkdir()
         (app_dir / "multi.tsx").write_text(
-            'import {\n'
-            '  Page,\n'
-            '  Card,\n'
-            '  Button,\n'
-            '  TextField,\n'
-            '} from "@shopify/polaris";\n'
+            'import {\n  Page,\n  Card,\n  Button,\n  TextField,\n} from "@shopify/polaris";\n'
         )
         config = ProjectConfig(
             name="test",

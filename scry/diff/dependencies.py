@@ -14,9 +14,7 @@ def _clean_version(v: str) -> str:
     return _VERSION_PREFIX.sub("", v)
 
 
-def diff_dependencies(
-    current: dict[str, str], latest: dict[str, str]
-) -> list[ImpactItem]:
+def diff_dependencies(current: dict[str, str], latest: dict[str, str]) -> list[ImpactItem]:
     """Compare current dependency versions against latest and return impacts."""
     items: list[ImpactItem] = []
 

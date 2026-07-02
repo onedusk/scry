@@ -102,11 +102,7 @@ class GraphQLExtractor:
                 op_type_str = match.group(1)
                 op_name = match.group(2)
 
-                op_type = (
-                    OperationType.QUERY
-                    if op_type_str == "query"
-                    else OperationType.MUTATION
-                )
+                op_type = OperationType.QUERY if op_type_str == "query" else OperationType.MUTATION
 
                 # Use the position of the operation keyword directly,
                 # not the tag position — avoids matching wrong keywords

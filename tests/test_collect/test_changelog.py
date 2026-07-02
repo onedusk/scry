@@ -24,7 +24,9 @@ def _make_config(tmp_path: Path, urls: list[str] | None = None) -> ProjectConfig
 class _MockDocument:
     """Minimal mock for firecrawl Document."""
 
-    def __init__(self, markdown: str, title: str = "Test Page", source_url: str = "https://example.com") -> None:
+    def __init__(
+        self, markdown: str, title: str = "Test Page", source_url: str = "https://example.com"
+    ) -> None:
         self.markdown = markdown
         self.metadata = _MockMetadata(title, source_url)
 

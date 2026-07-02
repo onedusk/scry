@@ -16,9 +16,7 @@ class TestWebhookExtractor:
         assert "app/uninstalled" in result.webhook_topics
         assert "app/scopes_update" in result.webhook_topics
 
-    def test_extracts_compliance_topics(
-        self, inventory_project_root: ProjectConfig
-    ) -> None:
+    def test_extracts_compliance_topics(self, inventory_project_root: ProjectConfig) -> None:
         """Extracts compliance_topics from subscriptions that use them."""
         surface = AppSurface(api_version="")
         extractor = WebhookExtractor()

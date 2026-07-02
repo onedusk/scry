@@ -99,30 +99,23 @@ def generate_impact_report(
             )
             lines.append(f"- **Affected files**: {files_str}")
             features_str = (
-                ", ".join(item.affected_features)
-                if item.affected_features
-                else "None identified"
+                ", ".join(item.affected_features) if item.affected_features else "None identified"
             )
             lines.append(f"- **Affected features**: {features_str}")
             lines.append(f"- **What changed**: {_item_description(item)}")
-            lines.append(
-                f"- **Suggested action**: {item.suggested_action or 'Review required'}"
-            )
+            lines.append(f"- **Suggested action**: {item.suggested_action or 'Review required'}")
             lines.append("")
 
     # Deprecation Tracker
     deprecation_items = [
         i
         for i in impacts
-        if isinstance(i.change, ChangeRecord)
-        and i.change.category == ChangeCategory.DEPRECATION
+        if isinstance(i.change, ChangeRecord) and i.change.category == ChangeCategory.DEPRECATION
     ]
     if deprecation_items:
         lines.append("## Deprecation Tracker")
         lines.append("")
-        lines.append(
-            "| Field/Feature | Deprecated In | Removed In | Project Uses? | Status |"
-        )
+        lines.append("| Field/Feature | Deprecated In | Removed In | Project Uses? | Status |")
         lines.append("|---|---|---|---|---|")
         for item in deprecation_items:
             change = item.change
@@ -133,17 +126,14 @@ def generate_impact_report(
             removed_in = str(change.sunset_date) if change.sunset_date else "TBD"
             uses = "Yes" if item.affected_files else "Unknown"
             status = item.severity.value.upper()
-            lines.append(
-                f"| {title} | {deprecated_in} | {removed_in} | {uses} | {status} |"
-            )
+            lines.append(f"| {title} | {deprecated_in} | {removed_in} | {uses} | {status} |")
         lines.append("")
 
     # SDK Updates
     sdk_items = [
         i
         for i in impacts
-        if isinstance(i.change, ChangeRecord)
-        and i.change.category == ChangeCategory.SDK
+        if isinstance(i.change, ChangeRecord) and i.change.category == ChangeCategory.SDK
     ]
     if sdk_items:
         lines.append("## SDK Updates")
@@ -166,9 +156,7 @@ def generate_impact_report(
         lines.append("")
 
     # Informational
-    info_items = [
-        i for i in impacts if i.severity in (Severity.LOW, Severity.INFO)
-    ]
+    info_items = [i for i in impacts if i.severity in (Severity.LOW, Severity.INFO)]
     if info_items:
         lines.append("## Informational")
         lines.append("")

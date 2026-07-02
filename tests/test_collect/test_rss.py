@@ -12,7 +12,9 @@ from scry.models.enums import ChangeCategory, ChangeSource
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 
 
-def _make_config(tmp_path: Path, rss_url: str | None = "https://example.com/feed.xml") -> ProjectConfig:
+def _make_config(
+    tmp_path: Path, rss_url: str | None = "https://example.com/feed.xml"
+) -> ProjectConfig:
     return ProjectConfig(
         name="test",
         root=tmp_path,

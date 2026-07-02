@@ -9,9 +9,7 @@ from scry.models.enums import Criticality, SchemaChangeType
 class TestDiffSchemas:
     """Tests for diff_schemas()."""
 
-    def test_detects_field_removed(
-        self, sample_old_schema: str, sample_new_schema: str
-    ) -> None:
+    def test_detects_field_removed(self, sample_old_schema: str, sample_new_schema: str) -> None:
         changes = diff_schemas(sample_old_schema, sample_new_schema)
         removed = [c for c in changes if c.change_type == SchemaChangeType.FIELD_REMOVED]
         assert len(removed) == 1
@@ -22,11 +20,7 @@ class TestDiffSchemas:
         self, sample_old_schema: str, sample_new_schema: str
     ) -> None:
         changes = diff_schemas(sample_old_schema, sample_new_schema)
-        added = [
-            c
-            for c in changes
-            if c.change_type == SchemaChangeType.REQUIRED_INPUT_FIELD_ADDED
-        ]
+        added = [c for c in changes if c.change_type == SchemaChangeType.REQUIRED_INPUT_FIELD_ADDED]
         assert len(added) == 1
         assert added[0].criticality == Criticality.BREAKING
         assert added[0].path == "ProductInput.sku"
@@ -39,9 +33,7 @@ class TestDiffSchemas:
         assert changes[0].change_type == SchemaChangeType.OPTIONAL_ARG_ADDED
         assert changes[0].criticality == Criticality.DANGEROUS
 
-    def test_identical_schemas_produce_no_changes(
-        self, sample_old_schema: str
-    ) -> None:
+    def test_identical_schemas_produce_no_changes(self, sample_old_schema: str) -> None:
         changes = diff_schemas(sample_old_schema, sample_old_schema)
         assert changes == []
 

@@ -43,18 +43,14 @@ def _change_type_label(item: ImpactItem) -> str:
 
 def _extract_version(impacts: list[ImpactItem]) -> str:
     """Extract the target version from the highest-severity impact."""
-    sorted_impacts = sorted(
-        impacts, key=lambda i: _severity_rank(i.severity), reverse=True
-    )
+    sorted_impacts = sorted(impacts, key=lambda i: _severity_rank(i.severity), reverse=True)
     for item in sorted_impacts:
         if isinstance(item.change, ChangeRecord) and item.change.version:
             return item.change.version
     return "upcoming"
 
 
-def generate_change_plan(
-    impacts: list[ImpactItem], config: ProjectConfig
-) -> str:
+def generate_change_plan(impacts: list[ImpactItem], config: ProjectConfig) -> str:
     """Generate a markdown change plan draft for high-severity impacts."""
     version = _extract_version(impacts)
     lines: list[str] = []
@@ -121,9 +117,7 @@ def generate_change_plan(
             lines.append("|---|---|---|---|")
             for task_idx, item in enumerate(items, 1):
                 file_str = (
-                    ", ".join(str(f) for f in item.affected_files)
-                    if item.affected_files
-                    else "TBD"
+                    ", ".join(str(f) for f in item.affected_files) if item.affected_files else "TBD"
                 )
                 lines.append(
                     f"| {task_idx} | {file_str} | Update | {_md_cell(_item_description(item))} |"
@@ -152,9 +146,7 @@ def generate_change_plan(
             lines.append("|---|---|---|---|")
             for task_idx, item in enumerate(items, 1):
                 file_str = (
-                    ", ".join(str(f) for f in item.affected_files)
-                    if item.affected_files
-                    else "TBD"
+                    ", ".join(str(f) for f in item.affected_files) if item.affected_files else "TBD"
                 )
                 lines.append(
                     f"| {task_idx} | {file_str} | Update | {_md_cell(_item_description(item))} |"
@@ -171,13 +163,9 @@ def generate_change_plan(
         lines.append("|---|---|---|---|")
         for task_idx, item in enumerate(ungrouped, 1):
             file_str = (
-                ", ".join(str(f) for f in item.affected_files)
-                if item.affected_files
-                else "TBD"
+                ", ".join(str(f) for f in item.affected_files) if item.affected_files else "TBD"
             )
-            lines.append(
-                f"| {task_idx} | {file_str} | Update | {_item_description(item)} |"
-            )
+            lines.append(f"| {task_idx} | {file_str} | Update | {_item_description(item)} |")
         lines.append("")
 
     # Open Questions
@@ -191,9 +179,7 @@ def generate_change_plan(
             and item.change.criticality == Criticality.BREAKING
             and not item.affected_files
         ):
-            questions.append(
-                f"Does this breaking change affect any unlisted files? ({title})"
-            )
+            questions.append(f"Does this breaking change affect any unlisted files? ({title})")
 
     if questions:
         lines.append("## Open Questions")

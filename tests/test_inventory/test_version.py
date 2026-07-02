@@ -10,9 +10,7 @@ from scry.models.surface import AppSurface
 
 
 class TestVersionExtractor:
-    def test_extracts_api_version_from_toml(
-        self, inventory_project_root: ProjectConfig
-    ) -> None:
+    def test_extracts_api_version_from_toml(self, inventory_project_root: ProjectConfig) -> None:
         """Extracts api_version from nested TOML path webhooks.api_version."""
         surface = AppSurface(api_version="")
         extractor = VersionExtractor()

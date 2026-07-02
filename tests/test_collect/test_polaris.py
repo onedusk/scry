@@ -23,7 +23,12 @@ def _make_config(tmp_path: Path) -> ProjectConfig:
 class _MockDocument:
     """Minimal mock for firecrawl Document."""
 
-    def __init__(self, markdown: str, title: str = "Polaris Page", source_url: str = "https://polaris.shopify.com") -> None:
+    def __init__(
+        self,
+        markdown: str,
+        title: str = "Polaris Page",
+        source_url: str = "https://polaris.shopify.com",
+    ) -> None:
         self.markdown = markdown
         self.metadata = _MockMetadata(title, source_url)
 
@@ -73,7 +78,10 @@ class TestClassifyPolarisContent:
         assert _classify_polaris_content("Component removed in v13.") == ChangeCategory.BREAKING
 
     def test_deprecation(self) -> None:
-        assert _classify_polaris_content("Badge deprecated, use StatusBadge.") == ChangeCategory.DEPRECATION
+        assert (
+            _classify_polaris_content("Badge deprecated, use StatusBadge.")
+            == ChangeCategory.DEPRECATION
+        )
 
     def test_feature(self) -> None:
         assert _classify_polaris_content("New Tooltip component added.") == ChangeCategory.FEATURE

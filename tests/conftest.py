@@ -83,18 +83,12 @@ def inventory_project_root(tmp_path: Path) -> ProjectConfig:
     app_routes.mkdir(parents=True)
 
     # Copy fixture files into the temp project
-    (app_routes / "products.ts").write_text(
-        (FIXTURES_DIR / "sample_source.ts").read_text()
-    )
-    (app_routes / "components.tsx").write_text(
-        (FIXTURES_DIR / "sample_component.tsx").read_text()
-    )
+    (app_routes / "products.ts").write_text((FIXTURES_DIR / "sample_source.ts").read_text())
+    (app_routes / "components.tsx").write_text((FIXTURES_DIR / "sample_component.tsx").read_text())
     (tmp_path / "shopify.app.toml").write_text(
         (FIXTURES_DIR / "sample_shopify_app.toml").read_text()
     )
-    (tmp_path / "package.json").write_text(
-        (FIXTURES_DIR / "sample_package.json").read_text()
-    )
+    (tmp_path / "package.json").write_text((FIXTURES_DIR / "sample_package.json").read_text())
 
     return ProjectConfig(
         name="diode",

@@ -43,9 +43,7 @@ def save_state(state: RunState, config: ProjectConfig) -> Path:
     return path
 
 
-def filter_new_changes(
-    changes: list[ChangeRecord], state: RunState
-) -> list[ChangeRecord]:
+def filter_new_changes(changes: list[ChangeRecord], state: RunState) -> list[ChangeRecord]:
     """Return only changes not already seen in previous runs."""
     return [c for c in changes if not state.is_known(c.id)]
 

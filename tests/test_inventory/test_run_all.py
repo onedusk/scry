@@ -8,9 +8,7 @@ from scry.models.surface import AppSurface
 
 
 class TestRunAllExtractors:
-    def test_populates_all_fields(
-        self, inventory_project_root: ProjectConfig
-    ) -> None:
+    def test_populates_all_fields(self, inventory_project_root: ProjectConfig) -> None:
         """run_all_extractors returns a surface with all fields populated."""
         surface = run_all_extractors(inventory_project_root)
         assert surface.api_version == "2024-10"
@@ -20,9 +18,7 @@ class TestRunAllExtractors:
         assert len(surface.ui_components) >= 1
         assert len(surface.scopes) >= 1
 
-    def test_returns_app_surface(
-        self, inventory_project_root: ProjectConfig
-    ) -> None:
+    def test_returns_app_surface(self, inventory_project_root: ProjectConfig) -> None:
         """run_all_extractors returns an AppSurface instance."""
         result = run_all_extractors(inventory_project_root)
         assert isinstance(result, AppSurface)

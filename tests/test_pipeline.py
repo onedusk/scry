@@ -75,7 +75,9 @@ class TestPipelineStages:
         ):
             mock_inv.return_value = AppSurface(api_version="2026-04")
             mock_diff.return_value = DiffResult()
-            mock_report.return_value = __import__("scry.pipeline", fromlist=["ReportResult"]).ReportResult()
+            mock_report.return_value = __import__(
+                "scry.pipeline", fromlist=["ReportResult"]
+            ).ReportResult()
 
             from scry.pipeline import run_pipeline
 

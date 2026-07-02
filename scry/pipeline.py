@@ -80,9 +80,7 @@ def run_diff(
 
     schema_changes: list[SchemaChange] = []
     if collect_result.old_schema_sdl and collect_result.new_schema_sdl:
-        schema_changes = diff_schemas(
-            collect_result.old_schema_sdl, collect_result.new_schema_sdl
-        )
+        schema_changes = diff_schemas(collect_result.old_schema_sdl, collect_result.new_schema_sdl)
         logger.info("Schema diff found %d changes", len(schema_changes))
 
     # Match changelog entries against project surface
@@ -92,11 +90,7 @@ def run_diff(
     schema_impacts = [
         ImpactItem(
             change=sc,
-            severity=(
-                Severity.HIGH
-                if sc.criticality == Criticality.BREAKING
-                else Severity.MEDIUM
-            ),
+            severity=(Severity.HIGH if sc.criticality == Criticality.BREAKING else Severity.MEDIUM),
         )
         for sc in schema_changes
     ]

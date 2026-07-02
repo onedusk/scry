@@ -63,9 +63,7 @@ class TestGenerateImpactReport:
         sample_surface_with_operations: AppSurface,
     ) -> None:
         """Empty impacts list produces 'No changes detected' in summary."""
-        report = generate_impact_report(
-            [], sample_config, sample_surface_with_operations
-        )
+        report = generate_impact_report([], sample_config, sample_surface_with_operations)
         assert "No changes detected" in report
         assert "## Action Required" not in report
 
@@ -108,9 +106,7 @@ class TestGenerateImpactReport:
                 severity=Severity.LOW,
             ),
         ]
-        report = generate_impact_report(
-            items, sample_config, sample_surface_with_operations
-        )
+        report = generate_impact_report(items, sample_config, sample_surface_with_operations)
         assert "Product.barcode" in report
         assert "New feature added" in report
 

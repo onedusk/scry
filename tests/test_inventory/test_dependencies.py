@@ -8,9 +8,7 @@ from scry.models.surface import AppSurface
 
 
 class TestDependencyExtractor:
-    def test_extracts_shopify_deps(
-        self, inventory_project_root: ProjectConfig
-    ) -> None:
+    def test_extracts_shopify_deps(self, inventory_project_root: ProjectConfig) -> None:
         """Extracts @shopify/* dependencies from package.json."""
         surface = AppSurface(api_version="")
         extractor = DependencyExtractor()
@@ -19,9 +17,7 @@ class TestDependencyExtractor:
         assert "@shopify/shopify-app-remix" in result.dependencies
         assert "@shopify/api-codegen-preset" in result.dependencies
 
-    def test_ignores_non_matching_deps(
-        self, inventory_project_root: ProjectConfig
-    ) -> None:
+    def test_ignores_non_matching_deps(self, inventory_project_root: ProjectConfig) -> None:
         """Does not include dependencies that don't match configured prefixes."""
         surface = AppSurface(api_version="")
         extractor = DependencyExtractor()
@@ -30,9 +26,7 @@ class TestDependencyExtractor:
         assert "react" not in result.dependencies
         assert "typescript" not in result.dependencies
 
-    def test_empty_prefixes_returns_empty(
-        self, inventory_project_root: ProjectConfig
-    ) -> None:
+    def test_empty_prefixes_returns_empty(self, inventory_project_root: ProjectConfig) -> None:
         """Returns empty dict when dependency_prefixes is empty."""
         inventory_project_root.dependency_prefixes = []
         surface = AppSurface(api_version="")
@@ -55,9 +49,7 @@ class TestDependencyExtractor:
         result = extractor.extract(config, surface)
         assert result.dependencies == {}
 
-    def test_version_strings_preserved(
-        self, inventory_project_root: ProjectConfig
-    ) -> None:
+    def test_version_strings_preserved(self, inventory_project_root: ProjectConfig) -> None:
         """Preserves the exact version string from package.json."""
         surface = AppSurface(api_version="")
         extractor = DependencyExtractor()
@@ -68,13 +60,13 @@ class TestDependencyExtractor:
         """Extracts dependencies from pyproject.toml matching configured prefixes."""
         pyproject = tmp_path / "pyproject.toml"
         pyproject.write_text(
-            '[project]\n'
+            "[project]\n"
             'name = "myapp"\n'
-            'dependencies = [\n'
+            "dependencies = [\n"
             '    "shopify-api>=5.0",\n'
             '    "requests>=2.28",\n'
             '    "shopify-graphql>=1.0",\n'
-            ']\n'
+            "]\n"
         )
         config = ProjectConfig(
             name="test",
@@ -154,9 +146,7 @@ class TestDependencyExtractor:
     def test_collects_from_multiple_manifests(self, tmp_path: Path) -> None:
         """Collects dependencies from all manifest types present."""
         # package.json
-        (tmp_path / "package.json").write_text(
-            '{"dependencies": {"@shopify/polaris": "^12.0.0"}}'
-        )
+        (tmp_path / "package.json").write_text('{"dependencies": {"@shopify/polaris": "^12.0.0"}}')
         # pyproject.toml
         (tmp_path / "pyproject.toml").write_text(
             '[project]\nname = "x"\ndependencies = ["shopify-api>=5.0"]\n'

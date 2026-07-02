@@ -50,9 +50,7 @@ def generate_all_reports(
     collect_result: CollectResult | None = None,
 ) -> ReportResult:
     """Orchestrate all report generation and write files to the report directory."""
-    report_dir = (
-        config.root / config.report_dir / datetime.now().strftime("%Y-%m")
-    )
+    report_dir = config.root / config.report_dir / datetime.now().strftime("%Y-%m")
     report_dir.mkdir(parents=True, exist_ok=True)
 
     next_api_version = collect_result.next_api_version if collect_result else None
@@ -64,9 +62,7 @@ def generate_all_reports(
 
     # Change plan (only if critical/high items exist)
     change_plan_path = None
-    has_action_required = any(
-        i.severity in (Severity.CRITICAL, Severity.HIGH) for i in impacts
-    )
+    has_action_required = any(i.severity in (Severity.CRITICAL, Severity.HIGH) for i in impacts)
     if has_action_required:
         plan_md = generate_change_plan(impacts, config)
         change_plan_path = report_dir / "change-plan-draft.md"

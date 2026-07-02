@@ -38,15 +38,12 @@ class TestGenerateChangePlan:
         # Extract just the Affected Files section
         af_section = plan.split("## Affected Files")[1].split("##")[0]
         file_rows = [
-            line for line in af_section.split("\n")
-            if "products.ts" in line and "|" in line
+            line for line in af_section.split("\n") if "products.ts" in line and "|" in line
         ]
         assert len(file_rows) == 1
         assert "CRITICAL" in file_rows[0]
 
-    def test_open_questions_for_missing_action(
-        self, sample_config: ProjectConfig
-    ) -> None:
+    def test_open_questions_for_missing_action(self, sample_config: ProjectConfig) -> None:
         """Items without suggested_action generate open questions."""
         items = [
             ImpactItem(
@@ -65,9 +62,7 @@ class TestGenerateChangePlan:
         assert "migration path" in plan.lower()
         assert "unlisted files" in plan.lower()
 
-    def test_severity_grouping_fallback(
-        self, sample_config: ProjectConfig
-    ) -> None:
+    def test_severity_grouping_fallback(self, sample_config: ProjectConfig) -> None:
         """When no affected_features, falls back to severity grouping."""
         items = [
             ImpactItem(

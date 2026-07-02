@@ -12,7 +12,9 @@ from scry.models.config import ProjectConfig
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 
 
-def _make_config(tmp_path: Path, schema_base_url: str | None = "https://proxy.test") -> ProjectConfig:
+def _make_config(
+    tmp_path: Path, schema_base_url: str | None = "https://proxy.test"
+) -> ProjectConfig:
     """Create a config with a version source file."""
     toml_file = tmp_path / "shopify.app.toml"
     toml_file.write_text('[webhooks]\napi_version = "2026-04"\n')
@@ -44,7 +46,9 @@ class _MockResponse:
     def raise_for_status(self) -> None:
         if self.status_code >= 400:
             raise httpx.HTTPStatusError(
-                "error", request=httpx.Request("POST", "https://test"), response=self  # type: ignore[arg-type]
+                "error",
+                request=httpx.Request("POST", "https://test"),
+                response=self,  # type: ignore[arg-type]
             )
 
 

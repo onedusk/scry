@@ -47,9 +47,7 @@ class TestGenerateCliSummary:
 class TestExportRawChanges:
     """Tests for export_raw_changes() and export_raw_changes_json()."""
 
-    def test_writes_valid_json(
-        self, tmp_path: Path, sample_change_record: ChangeRecord
-    ) -> None:
+    def test_writes_valid_json(self, tmp_path: Path, sample_change_record: ChangeRecord) -> None:
         output = tmp_path / "changes.json"
         result = export_raw_changes([sample_change_record], output)
         assert result == output
@@ -65,9 +63,7 @@ class TestExportRawChanges:
         data = json.loads(output.read_text())
         assert data == []
 
-    def test_json_string_variant(
-        self, sample_change_record: ChangeRecord
-    ) -> None:
+    def test_json_string_variant(self, sample_change_record: ChangeRecord) -> None:
         result = export_raw_changes_json([sample_change_record])
         data = json.loads(result)
         assert len(data) == 1

@@ -14,9 +14,7 @@ _SEVERITY_RANK: dict[Severity, int] = {
 }
 
 
-def score_severity(
-    impacts: list[ImpactItem], rules: list[EscalationRule]
-) -> list[ImpactItem]:
+def score_severity(impacts: list[ImpactItem], rules: list[EscalationRule]) -> list[ImpactItem]:
     """Apply escalation rules and sunset deadlines to a list of ImpactItems.
 
     Rules can only raise severity, never lower it. Returns a new list
@@ -25,11 +23,7 @@ def score_severity(
     result: list[ImpactItem] = []
 
     for item in impacts:
-        path = (
-            item.change.path
-            if isinstance(item.change, SchemaChange)
-            else item.change.title
-        )
+        path = item.change.path if isinstance(item.change, SchemaChange) else item.change.title
 
         severity = item.severity
         for rule in rules:
@@ -40,8 +34,6 @@ def score_severity(
         if isinstance(item.change, ChangeRecord) and item.change.sunset_date is not None:
             deadline = item.change.sunset_date
 
-        result.append(
-            item.model_copy(update={"severity": severity, "deadline": deadline})
-        )
+        result.append(item.model_copy(update={"severity": severity, "deadline": deadline}))
 
     return result

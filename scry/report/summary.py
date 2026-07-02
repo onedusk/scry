@@ -16,9 +16,7 @@ def generate_summary(impacts: list[ImpactItem], config: ProjectConfig) -> str:
 
     total = len(impacts)
     affecting = sum(1 for i in impacts if i.affected_files)
-    action_required = sum(
-        1 for i in impacts if i.severity in (Severity.CRITICAL, Severity.HIGH)
-    )
+    action_required = sum(1 for i in impacts if i.severity in (Severity.CRITICAL, Severity.HIGH))
 
     deadlines = [i.deadline for i in impacts if i.deadline is not None]
     deadline_clause = ""
@@ -35,9 +33,7 @@ def generate_summary(impacts: list[ImpactItem], config: ProjectConfig) -> str:
 def generate_cli_summary(impacts: list[ImpactItem], config: ProjectConfig) -> str:
     """Produce a short CLI-friendly summary line."""
     total = len(impacts)
-    action_required = sum(
-        1 for i in impacts if i.severity in (Severity.CRITICAL, Severity.HIGH)
-    )
+    action_required = sum(1 for i in impacts if i.severity in (Severity.CRITICAL, Severity.HIGH))
     other = total - action_required
     return f"{total} changes | {action_required} action required | {other} other"
 

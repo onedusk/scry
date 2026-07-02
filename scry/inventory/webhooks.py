@@ -39,8 +39,6 @@ class WebhookExtractor:
         access_scopes: dict[str, Any] = data.get("access_scopes", {})  # pyright: ignore[reportAny]
         scopes_str: str = access_scopes.get("scopes", "")  # pyright: ignore[reportAny]
         if scopes_str:
-            surface.scopes = sorted(
-                s.strip() for s in scopes_str.split(",") if s.strip()
-            )
+            surface.scopes = sorted(s.strip() for s in scopes_str.split(",") if s.strip())
 
         return surface
