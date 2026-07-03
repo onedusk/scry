@@ -26,7 +26,7 @@ jobs:
         run: uv run ruff format --check .
 
       - name: Pyright
-        run: uv run pyright scry/
+        run: uv run pyright src/scry
 
       - name: Pytest
         # typer/rich force ANSI output when GITHUB_ACTIONS is set, which breaks

@@ -51,7 +51,10 @@ dev = [
 ]
 
 [tool.hatch.version]
-path = "scry/__init__.py"
+path = "src/scry/__init__.py"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/scry"]
 
 [tool.ruff]
 target-version = "py312"

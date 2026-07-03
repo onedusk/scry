@@ -15,7 +15,7 @@ CI (`.github/workflows/ci.yml`) runs four gates on every push and pull request; 
 ```bash
 uv run ruff check .
 uv run ruff format --check .
-uv run pyright scry/
+uv run pyright src/scry
 uv run pytest -q --cov=scry --cov-report=term
 ```
 

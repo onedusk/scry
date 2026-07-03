@@ -16,7 +16,7 @@ lint:
 
 # Type-check the package
 typecheck:
-    uv run pyright scry/
+    uv run pyright src/scry
 
 # Run every CI gate
 check: lint typecheck test

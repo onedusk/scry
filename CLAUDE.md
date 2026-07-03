@@ -40,7 +40,7 @@ All state is file-based (JSON + markdown). No database.
 ## Package Structure
 
 ```
-scry/                 # Main package
+src/scry/             # Main package
   cli.py              # Typer subcommands (run, collect, inventory, diff, report, init)
   config.py           # Project manifest loader
   models/             # Pydantic models for all entities
