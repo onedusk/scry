@@ -1,6 +1,9 @@
 """Tests for scry.pipeline and scry.cli — orchestration and CLI integration."""
 
+import logging
+import re
 from pathlib import Path
+from typing import Any
 from unittest.mock import patch
 
 from typer.testing import CliRunner
@@ -82,6 +85,32 @@ class TestPipelineStages:
 
             result = run_pipeline(config)
             assert result.collect.changes == []
+
+    def test_stage_timing_logged(self, tmp_path: Path, caplog: Any) -> None:
+        config = _make_config(tmp_path)
+        fresh_state = RunState()
+        change = ChangeRecord(
+            source=ChangeSource.RSS,
+            title="test change",
+            category=ChangeCategory.FEATURE,
+        )
+        surface = AppSurface(api_version="2026-04")
+        with (
+            patch("scry.collect.run_all_collectors", return_value=CollectResult(changes=[change])),
+            patch("scry.inventory.run_all_extractors", return_value=surface),
+            patch("scry.report.generate_all_reports", return_value=ReportResult()),
+            patch("scry.store.load_state", return_value=fresh_state),
+            patch("scry.store.filter_new_changes", return_value=[change]),
+            patch("scry.store.record_run", return_value=fresh_state),
+            patch("scry.store.save_state"),
+            caplog.at_level(logging.INFO),
+        ):
+            from scry.pipeline import run_pipeline
+
+            run_pipeline(config)
+
+        for stage in ("collect", "inventory", "diff", "report"):
+            assert re.search(rf"{stage} stage completed in \d+\.\ds", caplog.text), stage
 
 
 class TestCli:

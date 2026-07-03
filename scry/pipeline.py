@@ -1,6 +1,7 @@
 """Pipeline orchestrator — wires stages, manages execution order."""
 
 import logging
+import time
 
 from scry import collect, inventory, report, store
 from scry.diff import diff_schemas, match_changelog_to_surface, score_severity
@@ -17,13 +18,19 @@ logger = logging.getLogger(__name__)
 def run_collect(config: ProjectConfig) -> CollectResult:
     """Run the collect stage independently."""
     logger.info("Starting collect stage")
-    return collect.run_all_collectors(config)
+    start = time.perf_counter()
+    result = collect.run_all_collectors(config)
+    logger.info("collect stage completed in %.1fs", time.perf_counter() - start)
+    return result
 
 
 def run_inventory(config: ProjectConfig) -> AppSurface:
     """Run the inventory stage independently."""
     logger.info("Starting inventory stage")
-    return inventory.run_all_extractors(config)
+    start = time.perf_counter()
+    surface = inventory.run_all_extractors(config)
+    logger.info("inventory stage completed in %.1fs", time.perf_counter() - start)
+    return surface
 
 
 def run_diff(
@@ -33,6 +40,7 @@ def run_diff(
 ) -> DiffResult:
     """Run the diff stage independently."""
     logger.info("Starting diff stage")
+    start = time.perf_counter()
 
     schema_changes: list[SchemaChange] = []
     if collect_result.old_schema_sdl and collect_result.new_schema_sdl:
@@ -56,6 +64,7 @@ def run_diff(
     # Apply escalation rules
     scored = score_severity(all_impacts, config.escalation_rules)
 
+    logger.info("diff stage completed in %.1fs", time.perf_counter() - start)
     return DiffResult(schema_changes=schema_changes, impacts=scored)
 
 
@@ -102,9 +111,11 @@ def run_pipeline(config: ProjectConfig) -> PipelineResult:
     report_result = ReportResult()
     if collect_result.changes or diff_result.impacts:
         try:
+            start = time.perf_counter()
             report_result = report.generate_all_reports(
                 diff_result.impacts, collect_result.changes, config, surface, collect_result
             )
+            logger.info("report stage completed in %.1fs", time.perf_counter() - start)
         except Exception:
             logger.warning("Report stage failed", exc_info=True)
             report_result = ReportResult()
