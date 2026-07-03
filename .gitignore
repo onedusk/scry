@@ -5,6 +5,7 @@ dist/
 build/
 .pytest_cache/
 .ruff_cache/
+.coverage
 .pyright/
 .DS_Store
 .venv/

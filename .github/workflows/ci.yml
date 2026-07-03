@@ -33,4 +33,4 @@ jobs:
         # CLI help-text assertions; a dumb terminal keeps captured output plain.
         env:
           TERM: dumb
-        run: uv run pytest -q
+        run: uv run pytest -q --cov=scry --cov-report=term
