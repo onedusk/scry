@@ -78,6 +78,15 @@ def _setup_logging(verbose: bool, quiet: bool) -> None:
     logging.basicConfig(level=level, format="%(name)s: %(message)s")
 
 
+def _manifest_error_hint(error_type: str, field: str) -> str:
+    """Return a fix suggestion for one manifest validation error."""
+    if error_type == "missing":
+        return f"add '{field}' to the manifest"
+    if error_type.endswith("_type") or error_type.endswith("_parsing"):
+        return f"change the value of '{field}' to the expected type"
+    return f"correct the value of '{field}'"
+
+
 def _resolve_config(project: Path | None) -> Any:
     """Find and load the project config, or exit with a helpful message."""
     from pydantic import ValidationError
@@ -93,8 +102,19 @@ def _resolve_config(project: Path | None) -> Any:
     try:
         return load_config(manifest_path)
     except ValidationError as e:
-        typer.echo(f"Invalid manifest: {e}", err=True)
-        raise typer.Exit(code=1) from e
+        typer.echo(
+            f"Invalid manifest at {manifest_path}: {e.error_count()} validation error(s)",
+            err=True,
+        )
+        for error in e.errors():
+            field = ".".join(str(part) for part in error["loc"]) or "(manifest root)"
+            typer.echo(f"  - {field}: {error['msg']}", err=True)
+            typer.echo(f"    hint: {_manifest_error_hint(error['type'], field)}", err=True)
+        typer.echo(
+            "Fix the fields above, or run 'scry init' to generate a starter manifest.",
+            err=True,
+        )
+        raise typer.Exit(code=3) from e
     except ValueError as e:
         # e.g. missing FIRECRAWL_API_KEY with Firecrawl-dependent sources configured
         typer.echo(str(e), err=True)

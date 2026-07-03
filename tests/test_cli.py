@@ -125,3 +125,17 @@ class TestConfigLoadFailFast:
         result = runner.invoke(app, ["collect", "--project", str(manifest)])
         assert result.exit_code == 1
         assert "FIRECRAWL_API_KEY" in result.output
+
+    def test_malformed_manifest_exits_3_with_field_guidance(self, tmp_path: Path) -> None:
+        """Pipeline commands exit 3 and name each bad field when the manifest is invalid."""
+        manifest = tmp_path / "scry.yaml"
+        manifest.write_text("name: broken\nsource_patterns: 42\n")
+        result = runner.invoke(app, ["collect", "--project", str(manifest)])
+        assert result.exit_code == 3
+        assert "Invalid manifest" in result.output
+        # Missing required field is named with an actionable hint
+        assert "platform: Field required" in result.output
+        assert "hint: add 'platform' to the manifest" in result.output
+        # Wrong-type field is named with a type hint
+        assert "source_patterns" in result.output
+        assert "hint: change the value of 'source_patterns' to the expected type" in result.output
