@@ -1,5 +1,6 @@
 """Tests for scry.store — state persistence and dedup."""
 
+import json
 from pathlib import Path
 
 from scry.models.changes import ChangeRecord
@@ -76,6 +77,36 @@ class TestStateStore:
         # Backup uses timestamped suffix
         bak_files = list(scry_dir.glob("history.*.bak"))
         assert len(bak_files) == 1
+
+    def test_legacy_unversioned_state_round_trips(self, tmp_path: Path) -> None:
+        config = _make_config(tmp_path)
+        scry_dir = tmp_path / ".scry"
+        scry_dir.mkdir()
+        legacy = {
+            "last_run": "2026-05-01T12:00:00",
+            "known_change_ids": ["id1", "id2"],
+            "runs": [
+                {
+                    "timestamp": "2026-05-01T12:00:00",
+                    "project": "test-project",
+                    "changes_detected": 2,
+                    "impacts_found": 1,
+                    "report_path": "docs/report.md",
+                }
+            ],
+        }
+        (scry_dir / "history.json").write_text(json.dumps(legacy))
+
+        state = load_state(config)
+        assert state.schema_version == 1
+        assert state.known_change_ids == {"id1", "id2"}
+        assert len(state.runs) == 1
+        # Migration is not the corrupt-file path — no backup created
+        assert list(scry_dir.glob("history.*.bak")) == []
+
+        save_state(state, config)
+        assert '"schema_version": 1' in (scry_dir / "history.json").read_text()
+        assert load_state(config) == state
 
     def test_known_change_ids_serialization(self, tmp_path: Path) -> None:
         config = _make_config(tmp_path)

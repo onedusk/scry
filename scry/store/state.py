@@ -1,9 +1,11 @@
 """State persistence — load, save, filter, and record pipeline runs."""
 
+import json
 import logging
 import os
 from datetime import datetime
 from pathlib import Path
+from typing import Any
 
 from scry.models.changes import ChangeRecord
 from scry.models.config import ProjectConfig
@@ -17,6 +19,13 @@ def state_path(config: ProjectConfig) -> Path:
     return config.root / ".scry" / "history.json"
 
 
+def _migrate(data: dict[str, Any]) -> dict[str, Any]:
+    """Upgrade a raw state payload to the current schema version."""
+    # Files written before versioning lack the field; they are schema v1.
+    data.setdefault("schema_version", 1)
+    return data
+
+
 def load_state(config: ProjectConfig) -> RunState:
     """Load run state from disk, or return a fresh state if missing/corrupt."""
     path = state_path(config)
@@ -24,7 +33,7 @@ def load_state(config: ProjectConfig) -> RunState:
         return RunState()
 
     try:
-        return RunState.model_validate_json(path.read_text())
+        return RunState.model_validate(_migrate(json.loads(path.read_text())))
     except Exception:
         logger.warning("Corrupt state file at %s, starting fresh", path, exc_info=True)
         timestamp = datetime.now().strftime("%Y%m%dT%H%M%S")

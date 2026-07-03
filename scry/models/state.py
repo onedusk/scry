@@ -18,6 +18,7 @@ class RunRecord(BaseModel):
 class RunState(BaseModel):
     """Persistent state across runs, stored in history.json."""
 
+    schema_version: int = 1
     last_run: datetime | None = None
     known_change_ids: set[str] = Field(default_factory=set)
     runs: list[RunRecord] = []
