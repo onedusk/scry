@@ -10,30 +10,14 @@ from scry.models.config import ProjectConfig
 from scry.models.enums import ChangeCategory, Severity
 from scry.models.impact import ImpactItem
 from scry.models.surface import AppSurface
+from scry.report._format import item_description, item_title, md_cell, severity_rank
 from scry.report.summary import generate_summary
-
-
-def _item_title(item: ImpactItem) -> str:
-    if isinstance(item.change, SchemaChange):
-        return item.change.path
-    return item.change.title
-
-
-def _item_description(item: ImpactItem) -> str:
-    if isinstance(item.change, SchemaChange):
-        return item.change.message
-    return item.change.description
 
 
 def _item_source(item: ImpactItem) -> str:
     if isinstance(item.change, SchemaChange):
         return "schema diff"
     return item.change.url or item.change.source.value
-
-
-def _md_cell(value: str) -> str:
-    """Escape pipe characters for markdown table cells."""
-    return value.replace("|", "\\|")
 
 
 _VERSION_PREFIX = re.compile(r"^[^0-9]*")
@@ -68,16 +52,6 @@ def _relative_path(path: Path, root: Path) -> str:
         return str(path)
 
 
-def _severity_rank(severity: Severity) -> int:
-    return {
-        Severity.CRITICAL: 4,
-        Severity.HIGH: 3,
-        Severity.MEDIUM: 2,
-        Severity.LOW: 1,
-        Severity.INFO: 0,
-    }[severity]
-
-
 def generate_impact_report(
     impacts: list[ImpactItem],
     config: ProjectConfig,
@@ -107,14 +81,14 @@ def generate_impact_report(
     # Action Required
     action_items = sorted(
         [i for i in impacts if i.severity in (Severity.CRITICAL, Severity.HIGH)],
-        key=lambda i: _severity_rank(i.severity),
+        key=lambda i: severity_rank(i.severity),
         reverse=True,
     )
     if action_items:
         lines.append("## Action Required")
         lines.append("")
         for item in action_items:
-            lines.append(f"### [{item.severity.value.upper()}] {_item_title(item)}")
+            lines.append(f"### [{item.severity.value.upper()}] {item_title(item)}")
             lines.append("")
             lines.append(f"- **Source**: {_item_source(item)}")
             lines.append(f"- **Deadline**: {item.deadline or 'N/A'}")
@@ -128,7 +102,7 @@ def generate_impact_report(
                 ", ".join(item.affected_features) if item.affected_features else "None identified"
             )
             lines.append(f"- **Affected features**: {features_str}")
-            lines.append(f"- **What changed**: {_item_description(item)}")
+            lines.append(f"- **What changed**: {item_description(item)}")
             lines.append(f"- **Suggested action**: {item.suggested_action or 'Review required'}")
             lines.append("")
 
@@ -147,7 +121,7 @@ def generate_impact_report(
             change = item.change
             if not isinstance(change, ChangeRecord):
                 continue
-            title = _md_cell(change.title)
+            title = md_cell(change.title)
             deprecated_in = change.version or "Unknown"
             removed_in = str(change.sunset_date) if change.sunset_date else "TBD"
             uses = "Yes" if item.affected_files else "Unknown"
@@ -175,8 +149,8 @@ def generate_impact_report(
             latest = latest or change.version or ""
             update_type = _update_type(current, latest)
             lines.append(
-                f"| {_md_cell(package)} | {current or '-'} | {latest or '-'} "
-                f"| {update_type} | {_md_cell(change.description)} |"
+                f"| {md_cell(package)} | {current or '-'} | {latest or '-'} "
+                f"| {update_type} | {md_cell(change.description)} |"
             )
         lines.append("")
 
@@ -186,7 +160,7 @@ def generate_impact_report(
         lines.append("## Informational")
         lines.append("")
         for item in info_items:
-            lines.append(f"- {_item_title(item)}: {_item_description(item)}")
+            lines.append(f"- {item_title(item)}: {item_description(item)}")
         lines.append("")
 
     return "\n".join(lines)

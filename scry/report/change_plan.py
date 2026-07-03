@@ -6,33 +6,7 @@ from scry.models.changes import ChangeRecord, SchemaChange
 from scry.models.config import ProjectConfig
 from scry.models.enums import Criticality, Severity
 from scry.models.impact import ImpactItem
-
-
-def _severity_rank(severity: Severity) -> int:
-    return {
-        Severity.CRITICAL: 4,
-        Severity.HIGH: 3,
-        Severity.MEDIUM: 2,
-        Severity.LOW: 1,
-        Severity.INFO: 0,
-    }[severity]
-
-
-def _item_title(item: ImpactItem) -> str:
-    if isinstance(item.change, SchemaChange):
-        return item.change.path
-    return item.change.title
-
-
-def _item_description(item: ImpactItem) -> str:
-    if isinstance(item.change, SchemaChange):
-        return item.change.message
-    return item.change.description
-
-
-def _md_cell(value: str) -> str:
-    """Escape pipe characters for markdown table cells."""
-    return value.replace("|", "\\|")
+from scry.report._format import item_description, item_title, md_cell, severity_rank
 
 
 def _change_type_label(item: ImpactItem) -> str:
@@ -43,7 +17,7 @@ def _change_type_label(item: ImpactItem) -> str:
 
 def _extract_version(impacts: list[ImpactItem]) -> str:
     """Extract the target version from the highest-severity impact."""
-    sorted_impacts = sorted(impacts, key=lambda i: _severity_rank(i.severity), reverse=True)
+    sorted_impacts = sorted(impacts, key=lambda i: severity_rank(i.severity), reverse=True)
     for item in sorted_impacts:
         if isinstance(item.change, ChangeRecord) and item.change.version:
             return item.change.version
@@ -76,10 +50,10 @@ def generate_change_plan(impacts: list[ImpactItem], config: ProjectConfig) -> st
     file_map: dict[str, tuple[Severity, str, str]] = {}
     for item in impacts:
         change_type = _change_type_label(item)
-        description = _item_description(item)
+        description = item_description(item)
         for fpath in item.affected_files:
             fstr = str(fpath)
-            if fstr not in file_map or _severity_rank(item.severity) > _severity_rank(
+            if fstr not in file_map or severity_rank(item.severity) > severity_rank(
                 file_map[fstr][0]
             ):
                 file_map[fstr] = (item.severity, change_type, description)
@@ -91,7 +65,7 @@ def generate_change_plan(impacts: list[ImpactItem], config: ProjectConfig) -> st
         lines.append("|---|---|---|---|")
         for fpath, (severity, change_type, description) in sorted(file_map.items()):
             lines.append(
-                f"| {fpath} | {change_type} | {severity.value.upper()} | {_md_cell(description)} |"
+                f"| {fpath} | {change_type} | {severity.value.upper()} | {md_cell(description)} |"
             )
         lines.append("")
 
@@ -120,7 +94,7 @@ def generate_change_plan(impacts: list[ImpactItem], config: ProjectConfig) -> st
                     ", ".join(str(f) for f in item.affected_files) if item.affected_files else "TBD"
                 )
                 lines.append(
-                    f"| {task_idx} | {file_str} | Update | {_md_cell(_item_description(item))} |"
+                    f"| {task_idx} | {file_str} | Update | {md_cell(item_description(item))} |"
                 )
             lines.append("")
     else:
@@ -149,7 +123,7 @@ def generate_change_plan(impacts: list[ImpactItem], config: ProjectConfig) -> st
                     ", ".join(str(f) for f in item.affected_files) if item.affected_files else "TBD"
                 )
                 lines.append(
-                    f"| {task_idx} | {file_str} | Update | {_md_cell(_item_description(item))} |"
+                    f"| {task_idx} | {file_str} | Update | {md_cell(item_description(item))} |"
                 )
             lines.append("")
             idx += 1
@@ -165,13 +139,13 @@ def generate_change_plan(impacts: list[ImpactItem], config: ProjectConfig) -> st
             file_str = (
                 ", ".join(str(f) for f in item.affected_files) if item.affected_files else "TBD"
             )
-            lines.append(f"| {task_idx} | {file_str} | Update | {_item_description(item)} |")
+            lines.append(f"| {task_idx} | {file_str} | Update | {item_description(item)} |")
         lines.append("")
 
     # Open Questions
     questions: list[str] = []
     for item in impacts:
-        title = _item_title(item)
+        title = item_title(item)
         if not item.suggested_action:
             questions.append(f"What is the migration path for {title}?")
         if (
