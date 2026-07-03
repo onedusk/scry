@@ -110,6 +110,20 @@ class TestSchemaCollector:
         assert "Product" in (collector.old_schema_sdl or "")
         assert "Query" in (collector.old_schema_sdl or "")
 
+    def test_posts_to_versioned_urls(self, tmp_path: Path, monkeypatch: Any) -> None:
+        """Introspection POSTs target base_url/{version} for both versions."""
+        config = _make_config(tmp_path)
+        intro_json = _introspection_json()
+        requested: list[str] = []
+
+        def mock_post(self: Any, url: str, **kwargs: Any) -> _MockResponse:
+            requested.append(url)
+            return _MockResponse(intro_json)
+
+        monkeypatch.setattr(httpx.Client, "post", mock_post)
+        SchemaCollector().collect(config)
+        assert requested == ["https://proxy.test/2026-04", "https://proxy.test/2026-07"]
+
     def test_caches_schema_files(self, tmp_path: Path, monkeypatch: Any) -> None:
         """Schema SDL is cached to .cache/schemas/ directory."""
         config = _make_config(tmp_path)

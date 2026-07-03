@@ -66,6 +66,19 @@ class TestRegistryCollector:
         assert polaris_records[0].source == ChangeSource.REGISTRY
         assert polaris_records[0].category == ChangeCategory.SDK
 
+    def test_requests_encoded_scoped_package_url(self, tmp_path: Path, monkeypatch: Any) -> None:
+        """npm request URLs encode the scoped-package slash as %2F."""
+        config = _make_config(tmp_path)
+        requested: list[str] = []
+
+        def mock_get(self: Any, url: str, **kwargs: Any) -> _MockResponse:
+            requested.append(url)
+            return _MockResponse({"version": "99.0.0"})
+
+        monkeypatch.setattr(httpx.Client, "get", mock_get)
+        RegistryCollector().collect(config)
+        assert "https://registry.npmjs.org/@shopify%2Fpolaris/latest" in requested
+
     def test_handles_npm_not_found_string(self, tmp_path: Path, monkeypatch: Any) -> None:
         """npm returns string 'Not Found' for nonexistent packages — skip without crash."""
         config = _make_config(tmp_path)
