@@ -1,5 +1,5 @@
 name: sonit
-root: /Users/macadelic/dusk-indust/company/sandbox/dl_dev/experiments/_shopify_/sonit
+root: ./path/to/your/app  # set to the project you want scry to scan
 platform: shopify
 
 # Inventory extraction

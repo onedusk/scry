@@ -74,6 +74,8 @@ escalation_rules:
 report_dir: "docs/api-changes"
 ```
 
+A complete Shopify-flavored example lives in [`examples/sonit.yaml`](examples/sonit.yaml) — copy it and set `root` to the path of the project you want scry to scan, then adjust the platform-specific fields.
+
 ### Manifest fields
 
 | Field | Required | Description |

@@ -342,34 +342,48 @@ def doctor(
 _STARTER_MANIFEST = """\
 # scry project manifest
 # See https://github.com/dusk-indust/scry for documentation
+#
+# Each field is annotated with its type. Commented-out fields are optional
+# and show their default or an example value.
 
+# name: str — project name (used in reports)
 name: my-project
+# root: path — root directory of the project to scan
 root: .
-platform: shopify
+# platform: str — platform identifier, used in report headings (e.g. "shopify")
+platform: my-platform
 
 # Inventory extraction settings
-api_version_source: "shopify.app.toml:webhooks.api_version"
+# api_version_source: str — "<file>:<dotted.key>" locating the pinned API version
+api_version_source: "path/to/config.toml:api.version"
+# source_patterns: list[str] — glob patterns (relative to root) for source files to scan
 source_patterns:
-  - "app/**/*.ts"
-  - "app/**/*.tsx"
+  - "src/**/*.ts"
+# graphql_tag: str — tag marking GraphQL strings in source (default: "#graphql")
 graphql_tag: "#graphql"
-dependency_prefixes:
-  - "@shopify/"
-# component_tag_pattern: "<s-"
-# webhook_config_path: "shopify.app.toml"
+# dependency_prefixes: list[str] — package-name prefixes to track (default: [])
+dependency_prefixes: []
+# component_tag_pattern: str | null — regex for UI component tags (default: null)
+# component_tag_pattern: "<my-"
+# webhook_config_path: str | null — webhook config file, relative to root (default: null)
+# webhook_config_path: "path/to/config.toml"
 
 # Severity overrides
+# escalation_rules: list — rules of {pattern: regex str, floor: severity str, reason: str};
+#   floor is one of: critical, high, medium, low, info
 escalation_rules: []
 
 # Collect settings
-# changelog_rss_url: "https://shopify.dev/changelog/feed.xml"
-# changelog_page_urls: []
-# schema_base_url: "https://shopify.dev/admin-graphql"
-# design_system_urls:
-#   - "https://polaris.shopify.com/whats-new"
-# disabled_collectors: []
+# changelog_rss_url: str | null — RSS feed URL for changelog monitoring (default: null)
+# changelog_rss_url: "https://example.com/changelog/feed.xml"
+# changelog_page_urls: list[str] — changelog pages to scrape via Firecrawl (default: [])
+# schema_base_url: str | null — base URL for GraphQL schema introspection (default: null)
+# schema_base_url: "https://example.com/graphql"
+# design_system_urls: list[str] — design-system changelog pages to scrape (default: [])
+# disabled_collectors: list[str] — collector names to skip (default: [])
 
 # Report output
+# report_dir: str — report output directory, relative to root (default: "docs/api-changes")
 report_dir: "docs/api-changes"
 """
 
