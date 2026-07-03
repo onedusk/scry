@@ -9,7 +9,7 @@ from scry.collect.registry import RegistryCollector
 from scry.collect.rss import RssCollector
 from scry.collect.schema import SchemaCollector
 from scry.models.config import ProjectConfig
-from scry.pipeline import CollectResult
+from scry.models.results import CollectResult
 
 __all__ = [
     "BaseCollector",

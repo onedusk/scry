@@ -10,8 +10,9 @@ from scry.models.changes import ChangeRecord
 from scry.models.config import ProjectConfig
 from scry.models.enums import ChangeCategory, ChangeSource
 from scry.models.surface import AppSurface
+from scry.models.results import CollectResult, DiffResult, ReportResult
 from scry.models.state import RunState
-from scry.pipeline import CollectResult, DiffResult, run_collect, run_diff, run_inventory
+from scry.pipeline import run_collect, run_diff, run_inventory
 
 runner = CliRunner()
 
@@ -75,9 +76,7 @@ class TestPipelineStages:
         ):
             mock_inv.return_value = AppSurface(api_version="2026-04")
             mock_diff.return_value = DiffResult()
-            mock_report.return_value = __import__(
-                "scry.pipeline", fromlist=["ReportResult"]
-            ).ReportResult()
+            mock_report.return_value = ReportResult()
 
             from scry.pipeline import run_pipeline
 

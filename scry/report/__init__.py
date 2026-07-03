@@ -6,8 +6,8 @@ from scry.models.changes import ChangeRecord
 from scry.models.config import ProjectConfig
 from scry.models.enums import Severity
 from scry.models.impact import ImpactItem
+from scry.models.results import CollectResult, ReportResult
 from scry.models.surface import AppSurface
-from scry.pipeline import CollectResult, ReportResult
 from scry.report.change_plan import generate_change_plan
 from scry.report.impact import generate_impact_report
 from scry.report.summary import (
