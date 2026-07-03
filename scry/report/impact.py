@@ -1,5 +1,6 @@
 """Impact report generator — produces a markdown impact assessment."""
 
+import re
 from datetime import datetime, timezone
 from pathlib import Path
 
@@ -33,6 +34,31 @@ def _item_source(item: ImpactItem) -> str:
 def _md_cell(value: str) -> str:
     """Escape pipe characters for markdown table cells."""
     return value.replace("|", "\\|")
+
+
+_VERSION_PREFIX = re.compile(r"^[^0-9]*")
+
+
+def _parse_sdk_title(title: str) -> tuple[str, str, str]:
+    """Split a RegistryCollector title "pkg: current → latest" into its parts.
+
+    Returns the full title and empty version strings when the title does not
+    match that format.
+    """
+    package, _, versions = title.partition(": ")
+    current, arrow, latest = versions.partition(" → ")
+    if not arrow:
+        return title, "", ""
+    return package, current, latest
+
+
+def _update_type(current: str, latest: str) -> str:
+    """Classify a version bump as major or minor/patch by major component."""
+    cur_major = _VERSION_PREFIX.sub("", current).split(".")[0]
+    lat_major = _VERSION_PREFIX.sub("", latest).split(".")[0]
+    if not cur_major.isdigit() or not lat_major.isdigit():
+        return "unknown"
+    return "major" if cur_major != lat_major else "minor/patch"
 
 
 def _relative_path(path: Path, root: Path) -> str:
@@ -144,14 +170,13 @@ def generate_impact_report(
             change = item.change
             if not isinstance(change, ChangeRecord):
                 continue
-            # Title format from diff_dependencies: "pkg current → latest"
-            parts = change.title.split(" ")
-            package = parts[0] if parts else change.title
-            version_info = change.version or ""
-            # diff_dependencies: MEDIUM = major bump, LOW = minor/patch
-            update_type = "major" if item.severity == Severity.MEDIUM else "minor/patch"
+            # Title format from RegistryCollector: "pkg: current → latest"
+            package, current, latest = _parse_sdk_title(change.title)
+            latest = latest or change.version or ""
+            update_type = _update_type(current, latest)
             lines.append(
-                f"| {package} | - | {version_info} | {update_type} | {_md_cell(change.description)} |"
+                f"| {_md_cell(package)} | {current or '-'} | {latest or '-'} "
+                f"| {update_type} | {_md_cell(change.description)} |"
             )
         lines.append("")
 

@@ -110,6 +110,68 @@ class TestGenerateImpactReport:
         assert "Product.barcode" in report
         assert "New feature added" in report
 
+    def test_sdk_updates_parses_registry_title(
+        self,
+        sample_config: ProjectConfig,
+        sample_surface_with_operations: AppSurface,
+    ) -> None:
+        """SDK rows parse the RegistryCollector title into Package/Current/Latest."""
+        items = [
+            ImpactItem(
+                change=ChangeRecord(
+                    source=ChangeSource.REGISTRY,
+                    title="@shopify/polaris: ^12.0.0 → 13.1.0",
+                    category=ChangeCategory.SDK,
+                    description="Package @shopify/polaris has a newer version available.",
+                ),
+                severity=Severity.LOW,
+            ),
+        ]
+        report = generate_impact_report(items, sample_config, sample_surface_with_operations)
+        assert "## SDK Updates" in report
+        assert "| @shopify/polaris | ^12.0.0 | 13.1.0 | major |" in report
+        assert "| @shopify/polaris: " not in report
+
+    def test_sdk_updates_minor_bump_type(
+        self,
+        sample_config: ProjectConfig,
+        sample_surface_with_operations: AppSurface,
+    ) -> None:
+        """Same major version renders as minor/patch."""
+        items = [
+            ImpactItem(
+                change=ChangeRecord(
+                    source=ChangeSource.REGISTRY,
+                    title="@shopify/app-bridge: 3.2.0 → 3.4.1",
+                    category=ChangeCategory.SDK,
+                    description="Package @shopify/app-bridge has a newer version available.",
+                ),
+                severity=Severity.LOW,
+            ),
+        ]
+        report = generate_impact_report(items, sample_config, sample_surface_with_operations)
+        assert "| @shopify/app-bridge | 3.2.0 | 3.4.1 | minor/patch |" in report
+
+    def test_sdk_updates_unparseable_title(
+        self,
+        sample_config: ProjectConfig,
+        sample_surface_with_operations: AppSurface,
+    ) -> None:
+        """SDK entries without a registry-style title fall back to placeholders."""
+        items = [
+            ImpactItem(
+                change=ChangeRecord(
+                    source=ChangeSource.CHANGELOG,
+                    title="New SDK release announced",
+                    category=ChangeCategory.SDK,
+                    description="See the changelog for details.",
+                ),
+                severity=Severity.LOW,
+            ),
+        ]
+        report = generate_impact_report(items, sample_config, sample_surface_with_operations)
+        assert "| New SDK release announced | - | - | unknown |" in report
+
     def test_header_includes_metadata(
         self,
         sample_config: ProjectConfig,
