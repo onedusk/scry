@@ -17,3 +17,8 @@ def glob_source_files(config: ProjectConfig) -> list[Path]:
                 seen.add(path)
                 result.append(path)
     return result
+
+
+def read_source_files(config: ProjectConfig) -> dict[Path, str]:
+    """Glob source files once and return a path -> content map."""
+    return {path: path.read_text(encoding="utf-8") for path in glob_source_files(config)}

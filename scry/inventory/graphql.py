@@ -3,8 +3,9 @@
 from __future__ import annotations
 
 import re
+from pathlib import Path
 
-from scry.inventory._utils import glob_source_files
+from scry.inventory._utils import read_source_files
 from scry.models.config import ProjectConfig
 from scry.models.enums import OperationType
 from scry.models.surface import AppSurface, GraphQLOperation
@@ -86,6 +87,10 @@ def _extract_top_level_fields(raw_query: str) -> list[str]:
 class GraphQLExtractor:
     """Extracts GraphQL operations from tagged template literals in source files."""
 
+    def __init__(self, source_files: dict[Path, str] | None = None) -> None:
+        """Optionally accept a pre-read path -> content map to avoid re-reading files."""
+        self._source_files = source_files
+
     def extract(self, config: ProjectConfig, surface: AppSurface) -> AppSurface:
         """Scan source files for GraphQL operations and populate the surface."""
         tag = re.escape(config.graphql_tag)
@@ -96,8 +101,10 @@ class GraphQLExtractor:
 
         operations: list[GraphQLOperation] = []
 
-        for file_path in glob_source_files(config):
-            content = file_path.read_text(encoding="utf-8")
+        source_files = self._source_files
+        if source_files is None:
+            source_files = read_source_files(config)
+        for file_path, content in source_files.items():
             for match in pattern.finditer(content):
                 op_type_str = match.group(1)
                 op_name = match.group(2)

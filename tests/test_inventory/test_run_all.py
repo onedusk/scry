@@ -2,6 +2,8 @@
 
 from pathlib import Path
 
+import pytest
+
 from scry.inventory import run_all_extractors
 from scry.models.config import ProjectConfig
 from scry.models.surface import AppSurface
@@ -22,6 +24,29 @@ class TestRunAllExtractors:
         """run_all_extractors returns an AppSurface instance."""
         result = run_all_extractors(inventory_project_root)
         assert isinstance(result, AppSurface)
+
+    def test_source_files_read_once(
+        self, inventory_project_root: ProjectConfig, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """Each globbed source file is read exactly once across all extractors."""
+        read_counts: dict[Path, int] = {}
+        original_read_text = Path.read_text
+
+        def counting_read_text(
+            path: Path, encoding: str | None = None, errors: str | None = None
+        ) -> str:
+            read_counts[path] = read_counts.get(path, 0) + 1
+            return original_read_text(path, encoding=encoding, errors=errors)
+
+        monkeypatch.setattr(Path, "read_text", counting_read_text)
+        surface = run_all_extractors(inventory_project_root)
+
+        source_reads = {p: n for p, n in read_counts.items() if p.suffix in (".ts", ".tsx")}
+        assert len(source_reads) == 2
+        assert all(count == 1 for count in source_reads.values())
+        # The shared contents still reach both source-scanning extractors.
+        assert len(surface.graphql_operations) >= 2
+        assert len(surface.ui_components) >= 1
 
     def test_with_minimal_config(self, tmp_path: Path) -> None:
         """Runs without error with minimal config (no webhook path, no components)."""
