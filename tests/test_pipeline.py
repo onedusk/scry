@@ -8,10 +8,12 @@ from unittest.mock import patch
 
 from typer.testing import CliRunner
 
+from scry import __version__
 from scry.cli import app
 from scry.models.changes import ChangeRecord
 from scry.models.config import ProjectConfig
-from scry.models.enums import ChangeCategory, ChangeSource
+from scry.models.enums import ChangeCategory, ChangeSource, Severity
+from scry.models.impact import ImpactItem
 from scry.models.results import CollectResult, DiffResult, ReportResult
 from scry.models.state import RunState
 from scry.models.surface import AppSurface
@@ -127,6 +129,12 @@ class TestCli:
         assert result.exit_code == 0
         assert "--project" in result.output
         assert "--verbose" in result.output
+        assert "--json" in result.output
+
+    def test_version_flag(self) -> None:
+        result = runner.invoke(app, ["--version"])
+        assert result.exit_code == 0
+        assert f"scry {__version__}" in result.output
 
     def test_init_creates_manifest(self, tmp_path: Path) -> None:
         with patch("scry.cli.Path.cwd", return_value=tmp_path):
@@ -174,6 +182,43 @@ class TestCliCollect:
         data = json.loads(result.output)
         assert len(data) == 1
         assert data[0]["title"] == "test change"
+
+
+class TestCliRun:
+    """Tests for the run subcommand."""
+
+    def test_run_json_output(self, tmp_path: Path) -> None:
+        config = _make_config(tmp_path)
+        change = ChangeRecord(
+            source=ChangeSource.RSS,
+            title="test change",
+            category=ChangeCategory.FEATURE,
+        )
+        impact = ImpactItem(change=change, severity=Severity.HIGH)
+        report_result = ReportResult(impact_report_path=tmp_path / "impact-report.md")
+        with (
+            patch("scry.cli._resolve_config", return_value=config),
+            patch("scry.pipeline.run_collect", return_value=CollectResult(changes=[change])),
+            patch("scry.pipeline.run_inventory", return_value=AppSurface(api_version="2026-04")),
+            patch("scry.pipeline.run_diff", return_value=DiffResult(impacts=[impact])),
+            patch("scry.report.generate_all_reports", return_value=report_result),
+            patch("scry.store.load_state", return_value=RunState()),
+            patch("scry.store.filter_new_changes", return_value=[change]),
+            patch("scry.store.record_run", return_value=RunState()),
+            patch("scry.store.save_state"),
+        ):
+            result = runner.invoke(app, ["run", "--json"])
+
+        assert result.exit_code == 0
+        import json
+
+        data = json.loads(result.output)
+        assert data["failed_stages"] == []
+        assert len(data["impacts"]) == 1
+        assert data["impacts"][0]["severity"] == "high"
+        assert data["impacts"][0]["change"]["title"] == "test change"
+        assert data["report"]["impact_report_path"] == str(tmp_path / "impact-report.md")
+        assert data["report"]["change_plan_path"] is None
 
 
 class TestCliExitCodes:

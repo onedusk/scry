@@ -38,6 +38,30 @@ JsonOption = Annotated[
 ]
 
 
+def _version_callback(value: bool) -> None:
+    """Print the scry version and exit."""
+    if value:
+        from scry import __version__
+
+        typer.echo(f"scry {__version__}")
+        raise typer.Exit()
+
+
+@app.callback()
+def main(
+    version: Annotated[
+        bool,
+        typer.Option(
+            "--version",
+            help="Show the scry version and exit.",
+            callback=_version_callback,
+            is_eager=True,
+        ),
+    ] = False,
+) -> None:
+    """Detect API platform changes affecting your projects."""
+
+
 def _setup_logging(verbose: bool) -> None:
     """Configure logging based on verbosity flag."""
     level = logging.DEBUG if verbose else logging.WARNING
@@ -78,6 +102,7 @@ def _exit_if_stages_failed(failed_stages: list[str]) -> None:
 def run(
     project: ProjectOption = None,
     verbose: VerboseOption = False,
+    json: JsonOption = False,
 ) -> None:
     """Run the full pipeline: collect -> inventory -> diff -> report."""
     _setup_logging(verbose)
@@ -88,9 +113,24 @@ def run(
 
     result = run_pipeline(config)
 
-    typer.echo(generate_cli_summary(result.diff.impacts, config))
-    if result.report.impact_report_path:
-        typer.echo(f"Report written to {result.report.impact_report_path}")
+    if json:
+        import json as json_mod
+
+        paths = {
+            "impact_report_path": result.report.impact_report_path,
+            "change_plan_path": result.report.change_plan_path,
+            "raw_changes_path": result.report.raw_changes_path,
+        }
+        data = {
+            "impacts": [i.model_dump(mode="json") for i in result.diff.impacts],
+            "report": {k: str(v) if v else None for k, v in paths.items()},
+            "failed_stages": result.failed_stages,
+        }
+        typer.echo(json_mod.dumps(data, indent=2))
+    else:
+        typer.echo(generate_cli_summary(result.diff.impacts, config))
+        if result.report.impact_report_path:
+            typer.echo(f"Report written to {result.report.impact_report_path}")
     _exit_if_stages_failed(result.failed_stages)
 
 
