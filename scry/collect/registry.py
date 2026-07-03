@@ -76,17 +76,19 @@ class RegistryCollector:
         if not config.dependency_prefixes:
             return []
 
-        # Read current deps from project manifests
-        all_deps: dict[str, str] = {}
-        all_deps.update(_read_package_json(config.root / "package.json"))
-        all_deps.update(_read_pyproject_toml(config.root / "pyproject.toml"))
-        all_deps.update(_read_gemfile_lock(config.root / "Gemfile.lock"))
-        all_deps.update(_read_go_mod(config.root / "go.mod"))
+        # Read current deps from project manifests, tagged with source ecosystem
+        manifests: list[tuple[str, dict[str, str]]] = [
+            ("npm", _read_package_json(config.root / "package.json")),
+            ("pypi", _read_pyproject_toml(config.root / "pyproject.toml")),
+            ("gem", _read_gemfile_lock(config.root / "Gemfile.lock")),
+            ("go", _read_go_mod(config.root / "go.mod")),
+        ]
 
-        # Filter by configured prefixes
-        tracked = {
-            name: version
-            for name, version in all_deps.items()
+        # Filter by configured prefixes, carrying each dep's ecosystem
+        tracked: dict[str, tuple[str, str]] = {
+            name: (version, ecosystem)
+            for ecosystem, deps in manifests
+            for name, version in deps.items()
             if any(name.startswith(p) for p in config.dependency_prefixes)
         }
 
@@ -95,14 +97,15 @@ class RegistryCollector:
 
         records: list[ChangeRecord] = []
         with httpx.Client() as client:
-            for name, current_version in tracked.items():
-                # Route to correct registry
-                if name.startswith("@"):
+            for name, (current_version, ecosystem) in tracked.items():
+                # Route to the registry matching the dep's source manifest
+                if ecosystem == "npm":
                     latest = _check_npm(name, client)
-                else:
+                elif ecosystem == "pypi":
                     latest = _check_pypi(name, client)
-                    if latest is None:
-                        latest = _check_npm(name, client)
+                else:
+                    logger.debug("no registry checker for %s dep %s, skipping", ecosystem, name)
+                    continue
 
                 if latest is None:
                     continue

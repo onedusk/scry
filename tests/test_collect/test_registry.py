@@ -100,6 +100,76 @@ class TestRegistryCollector:
         records = RegistryCollector().collect(config)
         assert records == []
 
+    def test_routes_package_json_deps_to_npm_only(self, tmp_path: Path, monkeypatch: Any) -> None:
+        """Deps from package.json hit npm — one request each, never PyPI."""
+        config = _make_config(tmp_path)
+        requested: list[str] = []
+
+        def mock_get(self: Any, url: str, **kwargs: Any) -> _MockResponse:
+            requested.append(url)
+            return _MockResponse({"version": "99.0.0"})
+
+        monkeypatch.setattr(httpx.Client, "get", mock_get)
+        records = RegistryCollector().collect(config)
+        # Fixture has 3 @shopify/ deps (incl. devDependencies)
+        assert len(requested) == 3
+        assert all(url.startswith("https://registry.npmjs.org/") for url in requested)
+        assert len(records) == 3
+
+    def test_routes_pyproject_deps_to_pypi(self, tmp_path: Path, monkeypatch: Any) -> None:
+        """Deps from pyproject.toml hit PyPI, not npm."""
+        (tmp_path / "pyproject.toml").write_text(
+            '[project]\nname = "x"\nversion = "0"\ndependencies = ["shopify-api>=12.0"]\n'
+        )
+        config = _make_config(tmp_path, prefixes=["shopify-api"], with_package_json=False)
+        requested: list[str] = []
+
+        def mock_get(self: Any, url: str, **kwargs: Any) -> _MockResponse:
+            requested.append(url)
+            return _MockResponse({"info": {"version": "12.6.0"}})
+
+        monkeypatch.setattr(httpx.Client, "get", mock_get)
+        records = RegistryCollector().collect(config)
+        assert requested == ["https://pypi.org/pypi/shopify-api/json"]
+        assert len(records) == 1
+        assert "shopify-api" in records[0].title
+
+    def test_pypi_miss_does_not_fall_back_to_npm(self, tmp_path: Path, monkeypatch: Any) -> None:
+        """A PyPI 404 makes exactly one request — no npm fallback round-trip."""
+        (tmp_path / "pyproject.toml").write_text(
+            '[project]\nname = "x"\nversion = "0"\ndependencies = ["shopify-api>=12.0"]\n'
+        )
+        config = _make_config(tmp_path, prefixes=["shopify-api"], with_package_json=False)
+        requested: list[str] = []
+
+        def mock_get(self: Any, url: str, **kwargs: Any) -> _MockResponse:
+            requested.append(url)
+            return _MockResponse({}, status_code=404)
+
+        monkeypatch.setattr(httpx.Client, "get", mock_get)
+        records = RegistryCollector().collect(config)
+        assert records == []
+        assert requested == ["https://pypi.org/pypi/shopify-api/json"]
+
+    def test_skips_gem_and_go_deps_without_requests(self, tmp_path: Path, monkeypatch: Any) -> None:
+        """Gemfile.lock and go.mod deps have no checker — skipped, zero requests."""
+        (tmp_path / "Gemfile.lock").write_text("GEM\n  specs:\n    shopify_api (12.0.0)\n")
+        (tmp_path / "go.mod").write_text(
+            "module x\n\nrequire (\n\tgithub.com/Shopify/sarama v1.38.0\n)\n"
+        )
+        config = _make_config(
+            tmp_path,
+            prefixes=["shopify_api", "github.com/Shopify/"],
+            with_package_json=False,
+        )
+
+        def mock_get(self: Any, url: str, **kwargs: Any) -> None:
+            raise AssertionError(f"unexpected registry request: {url}")
+
+        monkeypatch.setattr(httpx.Client, "get", mock_get)
+        records = RegistryCollector().collect(config)
+        assert records == []
+
 
 class TestEncodeNpmPackage:
     def test_scoped_package(self) -> None:
