@@ -14,7 +14,7 @@ def _parse_pep508_name(dep_str: str) -> str:
     return match.group(1) if match else ""
 
 
-def _read_package_json(path: Any) -> dict[str, str]:  # noqa: ANN401
+def _read_package_json(path: Any) -> dict[str, str]:
     """Extract dependencies from package.json."""
     p = Path(path)  # pyright: ignore[reportUnknownArgumentType]
     if not p.is_file():
@@ -28,7 +28,7 @@ def _read_package_json(path: Any) -> dict[str, str]:  # noqa: ANN401
     return result
 
 
-def _read_pyproject_toml(path: Any) -> dict[str, str]:  # noqa: ANN401
+def _read_pyproject_toml(path: Any) -> dict[str, str]:
     """Extract dependencies from pyproject.toml."""
     import tomllib
 
@@ -50,7 +50,7 @@ def _read_pyproject_toml(path: Any) -> dict[str, str]:  # noqa: ANN401
     return result
 
 
-def _read_gemfile_lock(path: Any) -> dict[str, str]:  # noqa: ANN401
+def _read_gemfile_lock(path: Any) -> dict[str, str]:
     """Extract gem names and versions from Gemfile.lock."""
     p = Path(path)  # pyright: ignore[reportUnknownArgumentType]
     if not p.is_file():
@@ -73,7 +73,7 @@ def _read_gemfile_lock(path: Any) -> dict[str, str]:  # noqa: ANN401
     return result
 
 
-def _read_go_mod(path: Any) -> dict[str, str]:  # noqa: ANN401
+def _read_go_mod(path: Any) -> dict[str, str]:
     """Extract module dependencies from go.mod require block."""
     p = Path(path)  # pyright: ignore[reportUnknownArgumentType]
     if not p.is_file():

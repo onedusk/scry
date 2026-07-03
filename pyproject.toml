@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "scry"
-version = "0.1.0"
+dynamic = ["version"]
 description = "Detect API platform changes affecting your projects."
 requires-python = ">=3.12"
 dependencies = [
@@ -24,13 +24,19 @@ scry = "scry.cli:app"
 [project.optional-dependencies]
 dev = [
     "pytest>=8.0",
-    "ruff",
-    "pyright",
+    "ruff>=0.6",
+    "pyright>=1.1.390",
 ]
+
+[tool.hatch.version]
+path = "scry/__init__.py"
 
 [tool.ruff]
 target-version = "py312"
 line-length = 100
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "B", "UP", "SIM", "RUF"]
 
 [tool.pyright]
 pythonVersion = "3.12"

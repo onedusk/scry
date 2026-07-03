@@ -926,7 +926,6 @@ wheels = [
 
 [[package]]
 name = "scry"
-version = "0.1.0"
 source = { editable = "." }
 dependencies = [
     { name = "certifi" },
@@ -954,10 +953,10 @@ requires-dist = [
     { name = "graphql-core", specifier = ">=3.2" },
     { name = "httpx", specifier = ">=0.28" },
     { name = "pydantic", specifier = ">=2.10" },
-    { name = "pyright", marker = "extra == 'dev'" },
+    { name = "pyright", marker = "extra == 'dev'", specifier = ">=1.1.390" },
     { name = "pytest", marker = "extra == 'dev'", specifier = ">=8.0" },
     { name = "pyyaml", specifier = ">=6.0" },
-    { name = "ruff", marker = "extra == 'dev'" },
+    { name = "ruff", marker = "extra == 'dev'", specifier = ">=0.6" },
     { name = "typer", specifier = ">=0.15" },
 ]
 provides-extras = ["dev"]

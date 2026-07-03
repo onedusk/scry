@@ -9,9 +9,9 @@ from scry.cli import app
 from scry.models.changes import ChangeRecord
 from scry.models.config import ProjectConfig
 from scry.models.enums import ChangeCategory, ChangeSource
-from scry.models.surface import AppSurface
 from scry.models.results import CollectResult, DiffResult, ReportResult
 from scry.models.state import RunState
+from scry.models.surface import AppSurface
 from scry.pipeline import run_collect, run_diff, run_inventory
 
 runner = CliRunner()
@@ -157,14 +157,12 @@ class TestCliExitCodes:
             patch("scry.pipeline.run_collect", side_effect=Exception("network error")),
             patch("scry.pipeline.run_inventory", side_effect=Exception("fs error")),
             patch("scry.pipeline.run_diff", side_effect=Exception("diff error")),
+            patch("scry.store.load_state", return_value=RunState()),
+            patch("scry.store.filter_new_changes", return_value=[]),
+            patch("scry.store.record_run", return_value=RunState()),
+            patch("scry.store.save_state"),
         ):
-            with (
-                patch("scry.store.load_state", return_value=RunState()),
-                patch("scry.store.filter_new_changes", return_value=[]),
-                patch("scry.store.record_run", return_value=RunState()),
-                patch("scry.store.save_state"),
-            ):
-                result = runner.invoke(app, ["run"])
+            result = runner.invoke(app, ["run"])
 
         assert result.exit_code == 1
         assert "3 stage(s) failed: collect, inventory, diff" in result.output
@@ -176,14 +174,12 @@ class TestCliExitCodes:
             patch("scry.pipeline.run_collect", return_value=CollectResult()),
             patch("scry.pipeline.run_inventory", side_effect=Exception("fs error")),
             patch("scry.pipeline.run_diff", return_value=DiffResult()),
+            patch("scry.store.load_state", return_value=RunState()),
+            patch("scry.store.filter_new_changes", return_value=[]),
+            patch("scry.store.record_run", return_value=RunState()),
+            patch("scry.store.save_state"),
         ):
-            with (
-                patch("scry.store.load_state", return_value=RunState()),
-                patch("scry.store.filter_new_changes", return_value=[]),
-                patch("scry.store.record_run", return_value=RunState()),
-                patch("scry.store.save_state"),
-            ):
-                result = runner.invoke(app, ["run"])
+            result = runner.invoke(app, ["run"])
 
         assert result.exit_code == 1
         # Summary still printed before the failure footer
@@ -197,14 +193,12 @@ class TestCliExitCodes:
             patch("scry.pipeline.run_collect", return_value=CollectResult()),
             patch("scry.pipeline.run_inventory", return_value=AppSurface(api_version="2026-04")),
             patch("scry.pipeline.run_diff", return_value=DiffResult()),
+            patch("scry.store.load_state", return_value=RunState()),
+            patch("scry.store.filter_new_changes", return_value=[]),
+            patch("scry.store.record_run", return_value=RunState()),
+            patch("scry.store.save_state"),
         ):
-            with (
-                patch("scry.store.load_state", return_value=RunState()),
-                patch("scry.store.filter_new_changes", return_value=[]),
-                patch("scry.store.record_run", return_value=RunState()),
-                patch("scry.store.save_state"),
-            ):
-                result = runner.invoke(app, ["run"])
+            result = runner.invoke(app, ["run"])
 
         assert result.exit_code == 0
         assert "failed" not in result.output
@@ -216,14 +210,12 @@ class TestCliExitCodes:
             patch("scry.pipeline.run_collect", side_effect=Exception("network error")),
             patch("scry.pipeline.run_inventory", side_effect=Exception("fs error")),
             patch("scry.pipeline.run_diff", side_effect=Exception("diff error")),
+            patch("scry.store.load_state", return_value=RunState()),
+            patch("scry.store.filter_new_changes", return_value=[]),
+            patch("scry.store.record_run", return_value=RunState()),
+            patch("scry.store.save_state"),
         ):
-            with (
-                patch("scry.store.load_state", return_value=RunState()),
-                patch("scry.store.filter_new_changes", return_value=[]),
-                patch("scry.store.record_run", return_value=RunState()),
-                patch("scry.store.save_state"),
-            ):
-                result = runner.invoke(app, ["report"])
+            result = runner.invoke(app, ["report"])
 
         assert result.exit_code == 1
         assert "3 stage(s) failed: collect, inventory, diff" in result.output

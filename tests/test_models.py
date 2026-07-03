@@ -15,7 +15,6 @@ from scry.models.enums import (
 from scry.models.impact import ImpactItem
 from scry.models.state import RunState
 
-
 # --- ChangeRecord ---
 
 

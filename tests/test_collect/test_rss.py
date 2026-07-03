@@ -97,7 +97,7 @@ class TestRssCollector:
 class TestClassifyEntry:
     def test_deprecation(self) -> None:
         tags = [{"term": "Deprecation Announcement"}]
-        category, action_required, version = _classify_entry(tags)
+        category, action_required, _ = _classify_entry(tags)
         assert category == ChangeCategory.DEPRECATION
         assert not action_required
 

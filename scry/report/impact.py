@@ -1,7 +1,7 @@
 """Impact report generator — produces a markdown impact assessment."""
 
 import re
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import scry
@@ -59,7 +59,7 @@ def generate_impact_report(
     next_api_version: str | None = None,
 ) -> str:
     """Generate a full markdown impact report."""
-    now = datetime.now(tz=timezone.utc)
+    now = datetime.now(tz=UTC)
     lines: list[str] = []
 
     # Header

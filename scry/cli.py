@@ -5,7 +5,7 @@
 
 import logging
 from pathlib import Path
-from typing import Annotated, Any, Optional
+from typing import Annotated, Any
 
 import typer  # type: ignore[import-untyped]
 
@@ -17,7 +17,7 @@ app: Any = typer.Typer(
 
 # Common options reused across subcommands
 ProjectOption = Annotated[
-    Optional[Path],
+    Path | None,
     typer.Option(
         "--project",
         "-p",
@@ -115,9 +115,8 @@ def collect(
         typer.echo(json_mod.dumps(data, indent=2))
     else:
         sources = {c.source.value for c in result.changes}
-        typer.echo(
-            f"{len(result.changes)} changes collected from {', '.join(sorted(sources)) or 'no sources'}"
-        )
+        source_list = ", ".join(sorted(sources)) or "no sources"
+        typer.echo(f"{len(result.changes)} changes collected from {source_list}")
 
 
 @app.command()

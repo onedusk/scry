@@ -6,7 +6,7 @@ import logging
 import re
 import ssl
 from calendar import timegm
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import Any, cast
 from urllib.request import HTTPSHandler
 
@@ -79,12 +79,12 @@ class RssCollector:
             category, action_required, version = _classify_entry(tags)
 
             # Convert published_parsed (time.struct_time) to datetime
-            detected_at = datetime.now(tz=timezone.utc)
+            detected_at = datetime.now(tz=UTC)
             published: Any = entry.get("published_parsed")
             if published is not None:
                 detected_at = datetime.fromtimestamp(
                     timegm(published),
-                    tz=timezone.utc,
+                    tz=UTC,
                 )
 
             title: str = entry.get("title", "")

@@ -1,6 +1,7 @@
 """Tests for scry.diff.schema — GraphQL schema differ."""
 
 import pytest
+from graphql import GraphQLSyntaxError
 
 from scry.diff.schema import _extract_path, diff_schemas
 from scry.models.enums import Criticality, SchemaChangeType
@@ -38,7 +39,7 @@ class TestDiffSchemas:
         assert changes == []
 
     def test_invalid_sdl_raises_error(self) -> None:
-        with pytest.raises(Exception):
+        with pytest.raises(GraphQLSyntaxError):
             diff_schemas("not valid graphql", "type Query { x: Int }")
 
 

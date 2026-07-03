@@ -106,7 +106,10 @@ class RegistryCollector:
                             source=ChangeSource.REGISTRY,
                             title=f"{name}: {current_version} → {latest}",
                             category=ChangeCategory.SDK,
-                            description=f"Package {name} has a newer version available: {latest} (current: {current_version})",
+                            description=(
+                                f"Package {name} has a newer version available: "
+                                f"{latest} (current: {current_version})"
+                            ),
                         )
                     )
 

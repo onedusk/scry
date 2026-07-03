@@ -131,7 +131,9 @@ def sample_surface_with_operations() -> AppSurface:
                 operation_type=OperationType.QUERY,
                 file=Path("app/routes/products.ts"),
                 fields=["products"],
-                raw_query="query GetProducts { products(first: 10) { nodes { id title barcode } } }",
+                raw_query=(
+                    "query GetProducts { products(first: 10) { nodes { id title barcode } } }"
+                ),
             ),
         ],
         webhook_topics=["orders/create", "products/update"],
