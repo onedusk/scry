@@ -63,6 +63,17 @@ def _resolve_config(project: Path | None) -> Any:
         raise typer.Exit(code=1) from e
 
 
+def _exit_if_stages_failed(failed_stages: list[str]) -> None:
+    """Print a failure footer and exit non-zero if any pipeline stage failed."""
+    if not failed_stages:
+        return
+    typer.echo(
+        f"{len(failed_stages)} stage(s) failed: {', '.join(failed_stages)}",
+        err=True,
+    )
+    raise typer.Exit(code=1)
+
+
 @app.command()
 def run(
     project: ProjectOption = None,
@@ -80,6 +91,7 @@ def run(
     typer.echo(generate_cli_summary(result.diff.impacts, config))
     if result.report.impact_report_path:
         typer.echo(f"Report written to {result.report.impact_report_path}")
+    _exit_if_stages_failed(result.failed_stages)
 
 
 @app.command()
@@ -181,6 +193,7 @@ def report(
         typer.echo(f"Change plan: {result.report.change_plan_path}")
     if result.report.raw_changes_path:
         typer.echo(f"Raw changes: {result.report.raw_changes_path}")
+    _exit_if_stages_failed(result.failed_stages)
 
 
 _STARTER_MANIFEST = """\

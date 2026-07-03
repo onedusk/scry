@@ -146,3 +146,85 @@ class TestCliCollect:
         data = json.loads(result.output)
         assert len(data) == 1
         assert data[0]["title"] == "test change"
+
+
+class TestCliExitCodes:
+    """Tests for non-zero exit codes when pipeline stages fail."""
+
+    def test_run_exits_nonzero_when_all_stages_fail(self, tmp_path: Path) -> None:
+        config = _make_config(tmp_path)
+        with (
+            patch("scry.cli._resolve_config", return_value=config),
+            patch("scry.pipeline.run_collect", side_effect=Exception("network error")),
+            patch("scry.pipeline.run_inventory", side_effect=Exception("fs error")),
+            patch("scry.pipeline.run_diff", side_effect=Exception("diff error")),
+        ):
+            with (
+                patch("scry.store.load_state", return_value=RunState()),
+                patch("scry.store.filter_new_changes", return_value=[]),
+                patch("scry.store.record_run", return_value=RunState()),
+                patch("scry.store.save_state"),
+            ):
+                result = runner.invoke(app, ["run"])
+
+        assert result.exit_code == 1
+        assert "3 stage(s) failed: collect, inventory, diff" in result.output
+
+    def test_run_exits_nonzero_on_partial_failure(self, tmp_path: Path) -> None:
+        config = _make_config(tmp_path)
+        with (
+            patch("scry.cli._resolve_config", return_value=config),
+            patch("scry.pipeline.run_collect", return_value=CollectResult()),
+            patch("scry.pipeline.run_inventory", side_effect=Exception("fs error")),
+            patch("scry.pipeline.run_diff", return_value=DiffResult()),
+        ):
+            with (
+                patch("scry.store.load_state", return_value=RunState()),
+                patch("scry.store.filter_new_changes", return_value=[]),
+                patch("scry.store.record_run", return_value=RunState()),
+                patch("scry.store.save_state"),
+            ):
+                result = runner.invoke(app, ["run"])
+
+        assert result.exit_code == 1
+        # Summary still printed before the failure footer
+        assert "0 changes" in result.output
+        assert "1 stage(s) failed: inventory" in result.output
+
+    def test_run_exits_zero_when_all_stages_succeed(self, tmp_path: Path) -> None:
+        config = _make_config(tmp_path)
+        with (
+            patch("scry.cli._resolve_config", return_value=config),
+            patch("scry.pipeline.run_collect", return_value=CollectResult()),
+            patch("scry.pipeline.run_inventory", return_value=AppSurface(api_version="2026-04")),
+            patch("scry.pipeline.run_diff", return_value=DiffResult()),
+        ):
+            with (
+                patch("scry.store.load_state", return_value=RunState()),
+                patch("scry.store.filter_new_changes", return_value=[]),
+                patch("scry.store.record_run", return_value=RunState()),
+                patch("scry.store.save_state"),
+            ):
+                result = runner.invoke(app, ["run"])
+
+        assert result.exit_code == 0
+        assert "failed" not in result.output
+
+    def test_report_exits_nonzero_when_all_stages_fail(self, tmp_path: Path) -> None:
+        config = _make_config(tmp_path)
+        with (
+            patch("scry.cli._resolve_config", return_value=config),
+            patch("scry.pipeline.run_collect", side_effect=Exception("network error")),
+            patch("scry.pipeline.run_inventory", side_effect=Exception("fs error")),
+            patch("scry.pipeline.run_diff", side_effect=Exception("diff error")),
+        ):
+            with (
+                patch("scry.store.load_state", return_value=RunState()),
+                patch("scry.store.filter_new_changes", return_value=[]),
+                patch("scry.store.record_run", return_value=RunState()),
+                patch("scry.store.save_state"),
+            ):
+                result = runner.invoke(app, ["report"])
+
+        assert result.exit_code == 1
+        assert "3 stage(s) failed: collect, inventory, diff" in result.output

@@ -50,6 +50,7 @@ class PipelineResult:
     surface: AppSurface
     diff: DiffResult
     report: ReportResult
+    failed_stages: list[str] = field(default_factory=list)  # pyright: ignore[reportUnknownVariableType]
 
 
 def run_collect(config: ProjectConfig) -> CollectResult:
@@ -111,6 +112,8 @@ def run_pipeline(config: ProjectConfig) -> PipelineResult:
     # Load state for dedup
     state = load_state(config)
 
+    failed_stages: list[str] = []
+
     # Collect
     raw_change_count = 0
     try:
@@ -125,6 +128,7 @@ def run_pipeline(config: ProjectConfig) -> PipelineResult:
     except Exception:
         logger.warning("Collect stage failed", exc_info=True)
         collect_result = CollectResult()
+        failed_stages.append("collect")
 
     # Inventory
     try:
@@ -132,6 +136,7 @@ def run_pipeline(config: ProjectConfig) -> PipelineResult:
     except Exception:
         logger.warning("Inventory stage failed", exc_info=True)
         surface = AppSurface(api_version="unknown")
+        failed_stages.append("inventory")
 
     # Diff
     try:
@@ -139,6 +144,7 @@ def run_pipeline(config: ProjectConfig) -> PipelineResult:
     except Exception:
         logger.warning("Diff stage failed", exc_info=True)
         diff_result = DiffResult()
+        failed_stages.append("diff")
 
     # Report — skip if no new changes to avoid overwriting a previous report
     report_result = ReportResult()
@@ -150,6 +156,7 @@ def run_pipeline(config: ProjectConfig) -> PipelineResult:
         except Exception:
             logger.warning("Report stage failed", exc_info=True)
             report_result = ReportResult()
+            failed_stages.append("report")
     else:
         logger.info("No new changes — skipping report generation")
 
@@ -176,4 +183,5 @@ def run_pipeline(config: ProjectConfig) -> PipelineResult:
         surface=surface,
         diff=diff_result,
         report=report_result,
+        failed_stages=failed_stages,
     )
