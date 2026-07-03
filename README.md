@@ -60,6 +60,9 @@ webhook_config_path: "shopify.app.toml"
 changelog_rss_url: "https://shopify.dev/changelog/feed.xml"
 # schema_base_url: "https://shopify.dev/admin-graphql"
 # changelog_page_urls: []
+# design_system_urls:
+#   - "https://polaris.shopify.com/whats-new"
+# disabled_collectors: []
 
 # Severity overrides
 escalation_rules:
@@ -87,14 +90,19 @@ report_dir: "docs/api-changes"
 | `changelog_rss_url` | No | RSS feed URL for changelog monitoring |
 | `schema_base_url` | No | Base URL for GraphQL schema introspection |
 | `changelog_page_urls` | No | URLs to scrape via Firecrawl |
+| `design_system_urls` | No | Design-system changelog URLs to scrape (e.g. Polaris) |
+| `disabled_collectors` | No | Collector names to skip (`rss`, `changelog`, `schema`, `registry`, `polaris`, or an entry-point name) |
 | `escalation_rules` | No | Severity override rules |
 | `report_dir` | No | Report output directory (default: `docs/api-changes`) |
+
+Third-party packages can add collectors by registering a zero-arg factory under
+the `scry.collectors` entry-point group; no scry code changes needed.
 
 ### Environment variables
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `FIRECRAWL_API_KEY` | No | Enables changelog page scraping and Polaris monitoring |
+| `FIRECRAWL_API_KEY` | No | Enables changelog and design-system page scraping |
 
 ## CLI commands
 

@@ -23,6 +23,9 @@ escalation_rules: []
 # changelog_rss_url: "https://shopify.dev/changelog/feed.xml"
 # changelog_page_urls: []
 # schema_base_url: "https://shopify.dev/admin-graphql"
+# design_system_urls:
+#   - "https://polaris.shopify.com/whats-new"
+# disabled_collectors: []
 
 # Report output
 report_dir: "docs/api-changes"

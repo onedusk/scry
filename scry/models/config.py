@@ -56,6 +56,8 @@ class ProjectConfig(BaseModel):
     changelog_rss_url: str | None = None  # e.g. "https://shopify.dev/changelog/feed.xml"
     changelog_page_urls: list[str] = []  # Firecrawl targets
     schema_base_url: str | None = None  # Base URL for schema introspection
+    design_system_urls: list[str] = []  # Design-system changelog pages (Firecrawl targets)
+    disabled_collectors: list[str] = []  # Collector names to skip, e.g. ["polaris"]
 
     # Report output
     report_dir: str = "docs/api-changes"  # Relative to project root

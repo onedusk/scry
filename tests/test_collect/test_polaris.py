@@ -10,13 +10,14 @@ from scry.models.config import ProjectConfig
 from scry.models.enums import ChangeCategory, ChangeSource
 
 
-def _make_config(tmp_path: Path) -> ProjectConfig:
+def _make_config(tmp_path: Path, urls: list[str] | None = None) -> ProjectConfig:
     return ProjectConfig(
         name="test",
         root=tmp_path,
         platform="shopify",
         api_version_source="x:y",
         source_patterns=[],
+        design_system_urls=urls if urls is not None else ["https://polaris.shopify.com/whats-new"],
     )
 
 
@@ -57,6 +58,13 @@ class TestPolarisCollector:
         """Returns empty list when FIRECRAWL_API_KEY is not set."""
         config = _make_config(tmp_path)
         monkeypatch.delenv("FIRECRAWL_API_KEY", raising=False)
+        records = PolarisCollector().collect(config)
+        assert records == []
+
+    def test_returns_empty_without_configured_urls(self, tmp_path: Path, monkeypatch: Any) -> None:
+        """Returns empty list when no design_system_urls are configured."""
+        config = _make_config(tmp_path, urls=[])
+        monkeypatch.setenv("FIRECRAWL_API_KEY", "test-key")
         records = PolarisCollector().collect(config)
         assert records == []
 

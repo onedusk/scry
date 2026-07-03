@@ -1,4 +1,4 @@
-"""Collector for Polaris component changelog via Firecrawl scraping."""
+"""Collector for design-system changelogs (e.g. Polaris) via Firecrawl scraping."""
 
 from __future__ import annotations
 
@@ -12,10 +12,6 @@ from scry.models.config import ProjectConfig
 from scry.models.enums import ChangeCategory, ChangeSource
 
 logger = logging.getLogger(__name__)
-
-_POLARIS_URLS = [
-    "https://polaris.shopify.com/whats-new",
-]
 
 
 def _classify_polaris_content(content: str) -> ChangeCategory:
@@ -31,10 +27,13 @@ def _classify_polaris_content(content: str) -> ChangeCategory:
 
 
 class PolarisCollector:
-    """Scrapes Polaris changelog pages for component change detection."""
+    """Scrapes design-system changelog pages (config.design_system_urls)."""
 
     def collect(self, config: ProjectConfig) -> list[ChangeRecord]:
-        """Scrape Polaris pages and produce ChangeRecords."""
+        """Scrape configured design-system pages and produce ChangeRecords."""
+        if not config.design_system_urls:
+            return []
+
         api_key = os.environ.get("FIRECRAWL_API_KEY")
         if not api_key:
             logger.warning("FIRECRAWL_API_KEY not set, skipping Polaris scrape")
@@ -43,7 +42,7 @@ class PolarisCollector:
         app = FirecrawlApp(api_key=api_key)  # pyright: ignore[reportUnknownVariableType]
         records: list[ChangeRecord] = []
 
-        for url in _POLARIS_URLS:
+        for url in config.design_system_urls:
             try:
                 doc = app.scrape(url, formats=["markdown"])  # pyright: ignore[reportUnknownMemberType, reportUnknownVariableType]
 

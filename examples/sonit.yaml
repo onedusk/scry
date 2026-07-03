@@ -17,6 +17,8 @@ escalation_rules: []
 
 # Collect settings
 changelog_rss_url: "https://shopify.dev/changelog/feed.xml"
+design_system_urls:
+  - "https://polaris.shopify.com/whats-new"
 
 # Report output
 report_dir: "docs/api-changes"
