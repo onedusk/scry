@@ -8,12 +8,7 @@ from urllib.parse import quote
 
 import httpx
 
-from scry.inventory.dependencies import (
-    _read_gemfile_lock,  # pyright: ignore[reportPrivateUsage]
-    _read_go_mod,  # pyright: ignore[reportPrivateUsage]
-    _read_package_json,  # pyright: ignore[reportPrivateUsage]
-    _read_pyproject_toml,  # pyright: ignore[reportPrivateUsage]
-)
+from scry.manifests import read_project_dependencies
 from scry.models.changes import ChangeRecord
 from scry.models.config import ProjectConfig
 from scry.models.enums import ChangeCategory, ChangeSource
@@ -77,17 +72,12 @@ class RegistryCollector:
             return []
 
         # Read current deps from project manifests, tagged with source ecosystem
-        manifests: list[tuple[str, dict[str, str]]] = [
-            ("npm", _read_package_json(config.root / "package.json")),
-            ("pypi", _read_pyproject_toml(config.root / "pyproject.toml")),
-            ("gem", _read_gemfile_lock(config.root / "Gemfile.lock")),
-            ("go", _read_go_mod(config.root / "go.mod")),
-        ]
+        manifests = read_project_dependencies(config.root)
 
         # Filter by configured prefixes, carrying each dep's ecosystem
         tracked: dict[str, tuple[str, str]] = {
             name: (version, ecosystem)
-            for ecosystem, deps in manifests
+            for ecosystem, deps in manifests.items()
             for name, version in deps.items()
             if any(name.startswith(p) for p in config.dependency_prefixes)
         }
