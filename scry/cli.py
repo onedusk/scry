@@ -341,7 +341,7 @@ def doctor(
 
 _STARTER_MANIFEST = """\
 # scry project manifest
-# See https://github.com/dusk-indust/scry for documentation
+# See https://github.com/onedusk/scry for documentation
 #
 # Each field is annotated with its type. Commented-out fields are optional
 # and show their default or an example value.
