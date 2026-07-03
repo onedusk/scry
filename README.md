@@ -145,10 +145,13 @@ scry tracks seen changes in `.scry/history.json`. Subsequent runs only report ne
 
 ```bash
 uv sync --extra dev
-uv run pytest tests/ -v
-uv run ruff check .
-uv run pyright
+just check    # ruff check, ruff format --check, pyright, pytest — mirrors CI
 ```
+
+See the [`justfile`](justfile) for individual recipes (`test`, `lint`, `typecheck`, `run`) and
+[CONTRIBUTING.md](CONTRIBUTING.md) for setup, gates, and the commit flow. Pre-commit hooks
+(ruff lint + format) are configured in [`.pre-commit-config.yaml`](.pre-commit-config.yaml);
+enable them with `pre-commit install`.
 
 ## License
 
