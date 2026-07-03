@@ -12,3 +12,6 @@ build/
 .env
 .scry/
 .cache/
+.ctxt/
+docs/decompose/
+docs/internal/
