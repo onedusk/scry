@@ -32,6 +32,11 @@ VerboseOption = Annotated[
     typer.Option("--verbose", "-v", help="Enable debug logging."),
 ]
 
+QuietOption = Annotated[
+    bool,
+    typer.Option("--quiet", "-q", help="Only show warnings and errors."),
+]
+
 JsonOption = Annotated[
     bool,
     typer.Option("--json", "-j", help="Output results as JSON."),
@@ -62,9 +67,14 @@ def main(
     """Detect API platform changes affecting your projects."""
 
 
-def _setup_logging(verbose: bool) -> None:
-    """Configure logging based on verbosity flag."""
-    level = logging.DEBUG if verbose else logging.WARNING
+def _setup_logging(verbose: bool, quiet: bool) -> None:
+    """Configure logging based on verbosity flags. Verbose wins if both are set."""
+    if verbose:
+        level = logging.DEBUG
+    elif quiet:
+        level = logging.WARNING
+    else:
+        level = logging.INFO
     logging.basicConfig(level=level, format="%(name)s: %(message)s")
 
 
@@ -102,10 +112,11 @@ def _exit_if_stages_failed(failed_stages: list[str]) -> None:
 def run(
     project: ProjectOption = None,
     verbose: VerboseOption = False,
+    quiet: QuietOption = False,
     json: JsonOption = False,
 ) -> None:
     """Run the full pipeline: collect -> inventory -> diff -> report."""
-    _setup_logging(verbose)
+    _setup_logging(verbose, quiet)
     config = _resolve_config(project)
 
     from scry.pipeline import run_pipeline
@@ -138,10 +149,11 @@ def run(
 def collect(
     project: ProjectOption = None,
     verbose: VerboseOption = False,
+    quiet: QuietOption = False,
     json: JsonOption = False,
 ) -> None:
     """Run the collect stage only. Fetches changes from all configured sources."""
-    _setup_logging(verbose)
+    _setup_logging(verbose, quiet)
     config = _resolve_config(project)
 
     from scry.pipeline import run_collect
@@ -163,10 +175,11 @@ def collect(
 def inventory(
     project: ProjectOption = None,
     verbose: VerboseOption = False,
+    quiet: QuietOption = False,
     json: JsonOption = False,
 ) -> None:
     """Run the inventory stage only. Scans the target project's API surface."""
-    _setup_logging(verbose)
+    _setup_logging(verbose, quiet)
     config = _resolve_config(project)
 
     from scry.pipeline import run_inventory
@@ -188,10 +201,11 @@ def inventory(
 def diff(
     project: ProjectOption = None,
     verbose: VerboseOption = False,
+    quiet: QuietOption = False,
     json: JsonOption = False,
 ) -> None:
     """Run collect + inventory + diff stages (with dedup)."""
-    _setup_logging(verbose)
+    _setup_logging(verbose, quiet)
     config = _resolve_config(project)
 
     from scry.pipeline import run_collect, run_diff, run_inventory
@@ -217,9 +231,10 @@ def diff(
 def report(
     project: ProjectOption = None,
     verbose: VerboseOption = False,
+    quiet: QuietOption = False,
 ) -> None:
     """Run the full pipeline through report generation."""
-    _setup_logging(verbose)
+    _setup_logging(verbose, quiet)
     config = _resolve_config(project)
 
     from scry.pipeline import run_pipeline

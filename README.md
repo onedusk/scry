@@ -115,7 +115,7 @@ scry report      # Full pipeline through report generation
 scry init        # Generate starter scry.yaml
 ```
 
-All commands accept `--project/-p` to specify a manifest path and `--verbose/-v` for debug output. `collect`, `inventory`, and `diff` accept `--json/-j` for JSON output.
+All commands accept `--project/-p` to specify a manifest path, `--verbose/-v` for debug output, and `--quiet/-q` to show only warnings and errors (the default is INFO-level progress logging). `collect`, `inventory`, and `diff` accept `--json/-j` for JSON output.
 
 ## Reports
 

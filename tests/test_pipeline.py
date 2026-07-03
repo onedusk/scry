@@ -9,7 +9,7 @@ from unittest.mock import patch
 from typer.testing import CliRunner
 
 from scry import __version__
-from scry.cli import app
+from scry.cli import _setup_logging, app
 from scry.models.changes import ChangeRecord
 from scry.models.config import ProjectConfig
 from scry.models.enums import ChangeCategory, ChangeSource, Severity
@@ -129,7 +129,42 @@ class TestCli:
         assert result.exit_code == 0
         assert "--project" in result.output
         assert "--verbose" in result.output
+        assert "--quiet" in result.output
         assert "--json" in result.output
+
+    def test_setup_logging_level_mapping(self) -> None:
+        cases = [
+            ((False, False), logging.INFO),
+            ((True, False), logging.DEBUG),
+            ((False, True), logging.WARNING),
+            ((True, True), logging.DEBUG),  # verbose wins
+        ]
+        for (verbose, quiet), expected in cases:
+            with patch("scry.cli.logging.basicConfig") as mock_basic:
+                _setup_logging(verbose, quiet)
+            assert mock_basic.call_args.kwargs["level"] == expected, (verbose, quiet)
+
+    def test_run_verbose_logs_stage_progress(self, tmp_path: Path, caplog: Any) -> None:
+        config = _make_config(tmp_path)
+        with (
+            patch("scry.cli._resolve_config", return_value=config),
+            patch("scry.collect.run_all_collectors", return_value=CollectResult()),
+            patch(
+                "scry.inventory.run_all_extractors",
+                return_value=AppSurface(api_version="2026-04"),
+            ),
+            patch("scry.store.load_state", return_value=RunState()),
+            patch("scry.store.filter_new_changes", return_value=[]),
+            patch("scry.store.record_run", return_value=RunState()),
+            patch("scry.store.save_state"),
+            caplog.at_level(logging.DEBUG),
+        ):
+            result = runner.invoke(app, ["run", "--verbose"])
+
+        assert result.exit_code == 0
+        for stage in ("collect", "inventory", "diff"):
+            assert f"Starting {stage} stage" in caplog.text, stage
+            assert re.search(rf"{stage} stage completed in \d+\.\ds", caplog.text), stage
 
     def test_version_flag(self) -> None:
         result = runner.invoke(app, ["--version"])
