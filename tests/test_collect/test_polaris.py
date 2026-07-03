@@ -1,8 +1,10 @@
 """Tests for the PolarisCollector."""
 
+import logging
 from pathlib import Path
 from typing import Any
 
+import httpx
 from firecrawl.v2.client import FirecrawlClient  # type: ignore[import-untyped]
 
 from scry.collect.polaris import PolarisCollector, _classify_polaris_content
@@ -79,6 +81,20 @@ class TestPolarisCollector:
         monkeypatch.setattr(FirecrawlClient, "scrape", mock_scrape)
         records = PolarisCollector().collect(config)
         assert records == []
+
+    def test_handles_timeout(self, tmp_path: Path, monkeypatch: Any, caplog: Any) -> None:
+        """Request timeout during scrape degrades to a warning and empty result."""
+        config = _make_config(tmp_path)
+        monkeypatch.setenv("FIRECRAWL_API_KEY", "test-key")
+
+        def mock_scrape(self: Any, url: str, **kwargs: Any) -> None:
+            raise httpx.ConnectTimeout("timed out")
+
+        monkeypatch.setattr(FirecrawlClient, "scrape", mock_scrape)
+        with caplog.at_level(logging.WARNING):
+            records = PolarisCollector().collect(config)
+        assert records == []
+        assert "Failed to scrape Polaris page" in caplog.text
 
 
 class TestClassifyPolarisContent:

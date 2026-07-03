@@ -1,6 +1,7 @@
 """Tests for the RegistryCollector."""
 
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -112,6 +113,61 @@ class TestRegistryCollector:
         monkeypatch.setattr(httpx.Client, "get", mock_get)
         records = RegistryCollector().collect(config)
         assert records == []
+
+    def test_handles_timeout(self, tmp_path: Path, monkeypatch: Any, caplog: Any) -> None:
+        """Request timeout doesn't crash — warning logged, package skipped."""
+        config = _make_config(tmp_path)
+
+        def mock_get(self: Any, url: str, **kwargs: Any) -> None:
+            raise httpx.ReadTimeout("timed out")
+
+        monkeypatch.setattr(httpx.Client, "get", mock_get)
+        with caplog.at_level(logging.WARNING):
+            records = RegistryCollector().collect(config)
+        assert records == []
+        assert "npm check failed" in caplog.text
+
+    def test_handles_npm_http_4xx(self, tmp_path: Path, monkeypatch: Any, caplog: Any) -> None:
+        """npm HTTP 403 doesn't crash — warning logged, package skipped."""
+        config = _make_config(tmp_path)
+
+        def mock_get(self: Any, url: str, **kwargs: Any) -> _MockResponse:
+            return _MockResponse({}, status_code=403)
+
+        monkeypatch.setattr(httpx.Client, "get", mock_get)
+        with caplog.at_level(logging.WARNING):
+            records = RegistryCollector().collect(config)
+        assert records == []
+        assert "npm check failed" in caplog.text
+
+    def test_handles_npm_http_5xx(self, tmp_path: Path, monkeypatch: Any, caplog: Any) -> None:
+        """npm HTTP 500 doesn't crash — warning logged, package skipped."""
+        config = _make_config(tmp_path)
+
+        def mock_get(self: Any, url: str, **kwargs: Any) -> _MockResponse:
+            return _MockResponse({}, status_code=500)
+
+        monkeypatch.setattr(httpx.Client, "get", mock_get)
+        with caplog.at_level(logging.WARNING):
+            records = RegistryCollector().collect(config)
+        assert records == []
+        assert "npm check failed" in caplog.text
+
+    def test_handles_pypi_http_5xx(self, tmp_path: Path, monkeypatch: Any, caplog: Any) -> None:
+        """PyPI HTTP 500 doesn't crash — warning logged, package skipped."""
+        (tmp_path / "pyproject.toml").write_text(
+            '[project]\nname = "x"\nversion = "0"\ndependencies = ["shopify-api>=12.0"]\n'
+        )
+        config = _make_config(tmp_path, prefixes=["shopify-api"], with_package_json=False)
+
+        def mock_get(self: Any, url: str, **kwargs: Any) -> _MockResponse:
+            return _MockResponse({}, status_code=500)
+
+        monkeypatch.setattr(httpx.Client, "get", mock_get)
+        with caplog.at_level(logging.WARNING):
+            records = RegistryCollector().collect(config)
+        assert records == []
+        assert "PyPI check failed" in caplog.text
 
     def test_routes_package_json_deps_to_npm_only(self, tmp_path: Path, monkeypatch: Any) -> None:
         """Deps from package.json hit npm — one request each, never PyPI."""

@@ -1,6 +1,7 @@
 """Tests for the SchemaCollector."""
 
 import json
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -153,6 +154,85 @@ class TestSchemaCollector:
         result = collector.collect(config)
         assert result == []
         assert collector.old_schema_sdl is None
+
+    def test_handles_timeout(self, tmp_path: Path, monkeypatch: Any, caplog: Any) -> None:
+        """Request timeout doesn't crash — warning logged, SDL attrs stay None."""
+        config = _make_config(tmp_path)
+
+        def mock_post(self: Any, url: str, **kwargs: Any) -> None:
+            raise httpx.ReadTimeout("timed out")
+
+        monkeypatch.setattr(httpx.Client, "post", mock_post)
+        collector = SchemaCollector()
+        with caplog.at_level(logging.WARNING):
+            result = collector.collect(config)
+        assert result == []
+        assert collector.old_schema_sdl is None
+        assert collector.new_schema_sdl is None
+        assert "Schema fetch failed" in caplog.text
+
+    def test_handles_http_4xx(self, tmp_path: Path, monkeypatch: Any, caplog: Any) -> None:
+        """HTTP 403 doesn't crash — warning logged, SDL attrs stay None."""
+        config = _make_config(tmp_path)
+
+        def mock_post(self: Any, url: str, **kwargs: Any) -> _MockResponse:
+            return _MockResponse({}, status_code=403)
+
+        monkeypatch.setattr(httpx.Client, "post", mock_post)
+        collector = SchemaCollector()
+        with caplog.at_level(logging.WARNING):
+            result = collector.collect(config)
+        assert result == []
+        assert collector.old_schema_sdl is None
+        assert "Schema fetch failed" in caplog.text
+
+    def test_handles_http_5xx(self, tmp_path: Path, monkeypatch: Any, caplog: Any) -> None:
+        """HTTP 500 doesn't crash — warning logged, SDL attrs stay None."""
+        config = _make_config(tmp_path)
+
+        def mock_post(self: Any, url: str, **kwargs: Any) -> _MockResponse:
+            return _MockResponse({}, status_code=500)
+
+        monkeypatch.setattr(httpx.Client, "post", mock_post)
+        collector = SchemaCollector()
+        with caplog.at_level(logging.WARNING):
+            result = collector.collect(config)
+        assert result == []
+        assert collector.old_schema_sdl is None
+        assert "Schema fetch failed" in caplog.text
+
+    def test_handles_missing_data_key(self, tmp_path: Path, monkeypatch: Any, caplog: Any) -> None:
+        """Response JSON without a 'data' key doesn't crash — SDL attrs stay None."""
+        config = _make_config(tmp_path)
+
+        def mock_post(self: Any, url: str, **kwargs: Any) -> _MockResponse:
+            return _MockResponse({"errors": [{"message": "access denied"}]})
+
+        monkeypatch.setattr(httpx.Client, "post", mock_post)
+        collector = SchemaCollector()
+        with caplog.at_level(logging.WARNING):
+            result = collector.collect(config)
+        assert result == []
+        assert collector.old_schema_sdl is None
+        assert "Schema fetch failed" in caplog.text
+
+    def test_handles_malformed_introspection_json(
+        self, tmp_path: Path, monkeypatch: Any, caplog: Any
+    ) -> None:
+        """A 'data' payload that isn't an introspection result doesn't crash or cache."""
+        config = _make_config(tmp_path)
+
+        def mock_post(self: Any, url: str, **kwargs: Any) -> _MockResponse:
+            return _MockResponse({"data": {"not": "an introspection result"}})
+
+        monkeypatch.setattr(httpx.Client, "post", mock_post)
+        collector = SchemaCollector()
+        with caplog.at_level(logging.WARNING):
+            result = collector.collect(config)
+        assert result == []
+        assert collector.old_schema_sdl is None
+        assert "Schema fetch failed" in caplog.text
+        assert not (tmp_path / ".cache" / "schemas").exists()
 
     def test_returns_empty_when_no_base_url(self, tmp_path: Path) -> None:
         """Returns empty list when schema_base_url is None."""

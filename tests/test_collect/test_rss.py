@@ -1,5 +1,6 @@
 """Tests for the RssCollector."""
 
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -84,6 +85,18 @@ class TestRssCollector:
         config = _make_config(tmp_path, rss_url=None)
         records = RssCollector().collect(config)
         assert records == []
+
+    def test_malformed_xml_warns_and_returns_empty(
+        self, tmp_path: Path, monkeypatch: Any, caplog: Any
+    ) -> None:
+        """Malformed XML sets bozo — warning logged, no records, no crash."""
+        feed = feedparser.parse("<<< this is not xml >>>")
+        monkeypatch.setattr("scry.collect.rss.feedparser.parse", lambda _url, **_kw: feed)
+
+        with caplog.at_level(logging.WARNING):
+            records = RssCollector().collect(_make_config(tmp_path))
+        assert records == []
+        assert "RSS feed parsing had issues" in caplog.text
 
     def test_all_records_have_rss_source(self, tmp_path: Path, monkeypatch: Any) -> None:
         """All records have source=RSS."""

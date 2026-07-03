@@ -1,5 +1,6 @@
 """Tests for collector gating and entry-point registration."""
 
+import logging
 from pathlib import Path
 from typing import Any
 
@@ -41,6 +42,13 @@ class _PluginCollector:
                 category=ChangeCategory.PLATFORM,
             )
         ]
+
+
+class _RaisingCollector:
+    """Collector whose collect() always raises, for failure-isolation tests."""
+
+    def collect(self, config: ProjectConfig) -> list[ChangeRecord]:
+        raise RuntimeError("collector blew up")
 
 
 class _FakeEntryPoint:
@@ -124,3 +132,17 @@ class TestRunAllCollectors:
         result = run_all_collectors(_make_config(tmp_path, disabled=_ALL_BUILTIN_NAMES))
         assert len(result.changes) == 1
         assert result.changes[0].title == "plugin change"
+
+    def test_raising_collector_is_recorded_and_isolated(
+        self, tmp_path: Path, monkeypatch: Any, caplog: Any
+    ) -> None:
+        """A collector that raises is logged as failed; others still contribute."""
+        _patch_entry_points(
+            monkeypatch,
+            [_FakeEntryPoint("bad", _RaisingCollector), _FakeEntryPoint("good", _PluginCollector)],
+        )
+        with caplog.at_level(logging.WARNING):
+            result = run_all_collectors(_make_config(tmp_path, disabled=_ALL_BUILTIN_NAMES))
+        assert len(result.changes) == 1
+        assert result.changes[0].title == "plugin change"
+        assert "Collector _RaisingCollector failed" in caplog.text
