@@ -95,6 +95,10 @@ def _resolve_config(project: Path | None) -> Any:
     except ValidationError as e:
         typer.echo(f"Invalid manifest: {e}", err=True)
         raise typer.Exit(code=1) from e
+    except ValueError as e:
+        # e.g. missing FIRECRAWL_API_KEY with Firecrawl-dependent sources configured
+        typer.echo(str(e), err=True)
+        raise typer.Exit(code=1) from e
 
 
 def _exit_if_stages_failed(failed_stages: list[str]) -> None:
@@ -248,6 +252,71 @@ def report(
     if result.report.raw_changes_path:
         typer.echo(f"Raw changes: {result.report.raw_changes_path}")
     _exit_if_stages_failed(result.failed_stages)
+
+
+@app.command()
+def doctor(
+    project: ProjectOption = None,
+    verbose: VerboseOption = False,
+    quiet: QuietOption = False,
+) -> None:
+    """Preflight checks: manifest, env vars, source patterns, endpoint reachability."""
+    _setup_logging(verbose, quiet)
+
+    import httpx
+
+    from scry.config import check_firecrawl_env, find_manifest, load_config
+
+    failed = False
+
+    # Manifest is found and parses
+    try:
+        manifest_path = project or find_manifest()
+        config = load_config(manifest_path, check_env=False)
+    except Exception as e:
+        typer.echo(f"[FAIL] manifest: {e}", err=True)
+        raise typer.Exit(code=1) from e
+    typer.echo(f"[ok]   manifest: {manifest_path} parsed")
+
+    # FIRECRAWL_API_KEY present when Firecrawl-dependent config is set
+    try:
+        check_firecrawl_env(config)
+    except ValueError as e:
+        typer.echo(f"[FAIL] env: {e}", err=True)
+        failed = True
+    else:
+        typer.echo("[ok]   env: FIRECRAWL_API_KEY present or not required")
+
+    # Each source pattern matches at least one file
+    for pattern in config.source_patterns:
+        if next(config.root.glob(pattern), None) is None:
+            typer.echo(
+                f"[FAIL] source pattern '{pattern}' matched no files under {config.root}",
+                err=True,
+            )
+            failed = True
+        else:
+            typer.echo(f"[ok]   source pattern '{pattern}' matches files")
+
+    # Endpoint reachability (network problems are warnings, not failures)
+    for label, url in (
+        ("changelog_rss_url", config.changelog_rss_url),
+        ("schema_base_url", config.schema_base_url),
+    ):
+        if not url:
+            typer.echo(f"[skip] {label}: not configured")
+            continue
+        try:
+            response = httpx.get(url, timeout=5.0, follow_redirects=True)
+        except httpx.HTTPError as e:
+            typer.echo(f"[warn] {label}: {url} unreachable ({e})")
+        else:
+            typer.echo(f"[ok]   {label}: {url} responded (HTTP {response.status_code})")
+
+    if failed:
+        typer.echo("doctor: problems found", err=True)
+        raise typer.Exit(code=1)
+    typer.echo("doctor: all checks passed")
 
 
 _STARTER_MANIFEST = """\

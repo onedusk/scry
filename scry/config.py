@@ -1,5 +1,6 @@
 """Project manifest loading and resolution."""
 
+import os
 from pathlib import Path
 
 from scry.models.config import ProjectConfig
@@ -34,19 +35,49 @@ def find_manifest(start: Path | None = None) -> Path:
     )
 
 
-def load_config(manifest_path: Path) -> ProjectConfig:
+def check_firecrawl_env(config: ProjectConfig) -> None:
+    """Ensure FIRECRAWL_API_KEY is set when Firecrawl-dependent sources are configured.
+
+    changelog_page_urls and design_system_urls are scraped via Firecrawl. A field
+    only requires the key when its collector is not listed in disabled_collectors.
+
+    Raises:
+        ValueError: If FIRECRAWL_API_KEY is missing but required.
+    """
+    if os.environ.get("FIRECRAWL_API_KEY"):
+        return
+
+    disabled = set(config.disabled_collectors)
+    required_by: list[str] = []
+    if config.changelog_page_urls and "changelog" not in disabled:
+        required_by.append("changelog_page_urls")
+    if config.design_system_urls and "polaris" not in disabled:
+        required_by.append("design_system_urls")
+
+    if required_by:
+        raise ValueError(
+            f"FIRECRAWL_API_KEY is not set, but the manifest sets {', '.join(required_by)} "
+            "(scraped via Firecrawl). Set FIRECRAWL_API_KEY or disable the corresponding "
+            "collector(s) via disabled_collectors."
+        )
+
+
+def load_config(manifest_path: Path, *, check_env: bool = True) -> ProjectConfig:
     """Load and validate a project manifest.
 
     Supports YAML (.yaml, .yml) and TOML (.toml) formats.
 
     Args:
         manifest_path: Path to the manifest file.
+        check_env: Also validate required environment variables
+            (see check_firecrawl_env). Pass False to parse only.
 
     Returns:
         Validated ProjectConfig.
 
     Raises:
-        ValueError: If the manifest format is unsupported.
+        ValueError: If the manifest format is unsupported, or if a required
+            environment variable is missing (when check_env is True).
         pydantic.ValidationError: If the manifest content fails validation.
     """
     suffix = manifest_path.suffix.lower()
@@ -62,4 +93,7 @@ def load_config(manifest_path: Path) -> ProjectConfig:
     else:
         raise ValueError(f"Unsupported manifest format: {suffix}")
 
-    return ProjectConfig.model_validate(raw)
+    config = ProjectConfig.model_validate(raw)
+    if check_env:
+        check_firecrawl_env(config)
+    return config

@@ -102,7 +102,7 @@ the `scry.collectors` entry-point group; no scry code changes needed.
 
 | Variable | Required | Description |
 |----------|----------|-------------|
-| `FIRECRAWL_API_KEY` | No | Enables changelog and design-system page scraping |
+| `FIRECRAWL_API_KEY` | If `changelog_page_urls` or `design_system_urls` is set | Enables changelog and design-system page scraping |
 
 ## CLI commands
 
@@ -113,6 +113,7 @@ scry inventory   # Scan project API surface
 scry diff        # Collect + inventory + diff (with dedup)
 scry report      # Full pipeline through report generation
 scry init        # Generate starter scry.yaml
+scry doctor      # Preflight checks: manifest, env vars, source patterns, endpoints
 ```
 
 All commands accept `--project/-p` to specify a manifest path, `--verbose/-v` for debug output, and `--quiet/-q` to show only warnings and errors (the default is INFO-level progress logging). `collect`, `inventory`, and `diff` accept `--json/-j` for JSON output.
