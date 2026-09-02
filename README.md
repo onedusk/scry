@@ -2,7 +2,9 @@
 
 Detect API platform changes affecting your projects, score their impact, and generate change plans.
 
-scry monitors external API sources (changelogs, GraphQL schemas, package registries) and cross-references them against what your project actually uses. The result is a prioritized impact report showing exactly what changed, whether it affects you, and what to do about it.
+Your code depends on someone else's API, and that API changes on their schedule, not yours. Most teams find out about a breaking change when it breaks. scry closes that gap.
+
+scry monitors external API sources (changelogs, GraphQL schemas, package registries) and cross-references them against what your project actually uses. The result is a prioritized impact report showing exactly what changed, whether it affects you, and what to do about it. scry never modifies your source; it reads your project and writes reports.
 
 ## How it works
 
@@ -17,6 +19,8 @@ collect          inventory          diff              report
 ```
 
 **Collect** gathers changes from external sources. **Inventory** scans your project to build an API surface map. **Diff** cross-references them and scores severity. **Report** generates markdown reports with action items.
+
+The cross-reference is the point. A platform changelog has hundreds of entries, and most touch things your project never calls. Only the intersection of what changed and what you use makes it into the report, ranked by how much it will hurt.
 
 ## Install
 
@@ -75,6 +79,8 @@ report_dir: "docs/api-changes"
 ```
 
 A complete Shopify-flavored example lives in [`examples/sonit.yaml`](examples/sonit.yaml) — copy it and set `root` to the path of the project you want scry to scan, then adjust the platform-specific fields.
+
+Shopify is the platform scry was built against. The RSS and changelog-page collectors work with any URL. The schema collector assumes Shopify-style quarterly `YYYY-MM` API versions, the registry collector reads npm only, and the Polaris collector is Shopify-specific. Other platforms work to the degree their conventions match; see the entry-point note below for adding collectors.
 
 ### Manifest fields
 
