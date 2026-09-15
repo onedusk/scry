@@ -100,6 +100,12 @@ Remediation of the April and June 2026 codebase audits.
 
 ### Fixed
 
+- Schema introspection omitted deprecated input fields and arguments
+  (graphql-core's default query does not request them), so a deprecated input
+  field looked like a removal in the diff and produced a false HIGH on diode
+  (`ProductVariantsBulkInput.barcode` in 2026-10 is deprecated, not removed).
+  Introspection now requests deprecated input values; cached schemas fetched
+  before this fix carry no marker and are refetched automatically.
 - `scry doctor` reported any HTTP response as ok, so a 404 from the schema
   endpoint passed. HTTP error responses now warn, and the schema endpoint is
   probed with an introspection request at the project's pinned API version.

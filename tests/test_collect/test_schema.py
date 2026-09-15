@@ -7,7 +7,7 @@ from typing import Any
 
 import httpx
 
-from scry.collect.schema import SchemaCollector, _next_quarterly_version
+from scry.collect.schema import CACHE_MARKER, SchemaCollector, _next_quarterly_version
 from scry.models.config import ProjectConfig
 
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
@@ -211,6 +211,56 @@ class TestSchemaCollector:
         assert cache_dir.is_dir()
         assert (cache_dir / "2026-04.graphql").is_file()
         assert (cache_dir / "2026-07.graphql").is_file()
+
+    def test_introspection_requests_deprecated_input_values(
+        self, tmp_path: Path, monkeypatch: Any
+    ) -> None:
+        """The introspection query must ask for deprecated input fields and arguments."""
+        config = _make_config(tmp_path)
+        intro_json = _introspection_json()
+        queries: list[str] = []
+
+        def mock_post(self: Any, url: str, **kwargs: Any) -> _MockResponse:
+            queries.append(kwargs["json"]["query"])
+            return _MockResponse(intro_json)
+
+        monkeypatch.setattr(httpx.Client, "post", mock_post)
+        SchemaCollector().collect(config)
+        assert "inputFields(includeDeprecated: true)" in queries[0]
+        assert "args(includeDeprecated: true)" in queries[0]
+
+    def test_cached_schema_carries_marker_and_is_reused(
+        self, tmp_path: Path, monkeypatch: Any
+    ) -> None:
+        """A cache file written by this version starts with the marker and skips the fetch."""
+        config = _make_config(tmp_path)
+        requested: list[str] = []
+        monkeypatch.setattr(httpx.Client, "post", _serve_versions({"2026-04"}, requested))
+        SchemaCollector().collect(config)
+        cached = (tmp_path / ".cache" / "schemas" / "2026-04.graphql").read_text()
+        assert cached.startswith(CACHE_MARKER)
+
+        requested.clear()
+        SchemaCollector().collect(config)
+        assert "https://proxy.test/2026-04" not in requested
+
+    def test_stale_cache_without_marker_is_refetched(
+        self, tmp_path: Path, monkeypatch: Any, caplog: Any
+    ) -> None:
+        """Cache files from before the fix lack deprecated inputs and are replaced."""
+        config = _make_config(tmp_path)
+        cache_dir = tmp_path / ".cache" / "schemas"
+        cache_dir.mkdir(parents=True)
+        (cache_dir / "2026-04.graphql").write_text("type Query { stale: String }")
+        requested: list[str] = []
+        monkeypatch.setattr(httpx.Client, "post", _serve_versions({"2026-04"}, requested))
+        collector = SchemaCollector()
+        with caplog.at_level(logging.INFO):
+            collector.collect(config)
+        assert "https://proxy.test/2026-04" in requested
+        assert "predates deprecated input values" in caplog.text
+        assert (cache_dir / "2026-04.graphql").read_text().startswith(CACHE_MARKER)
+        assert "stale" not in (collector.old_schema_sdl or "")
 
     def test_handles_network_error(self, tmp_path: Path, monkeypatch: Any) -> None:
         """Network error doesn't crash — SDL attrs stay None."""

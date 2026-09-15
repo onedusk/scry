@@ -102,25 +102,38 @@ def _latest_available_version(current: str, base_url: str, client: httpx.Client)
     return latest
 
 
+# Leading SDL comment marking caches fetched with deprecated input values included.
+# Older cache files lack it and are refetched, since they silently drop those fields.
+CACHE_MARKER = "# scry schema cache v2: deprecated input values included\n"
+
+
 def _fetch_schema_sdl(
     version: str,
     base_url: str,
     cache_dir: Path,
     client: httpx.Client,
 ) -> str:
-    """Fetch a schema SDL by introspection, with file-based caching."""
+    """Fetch a schema SDL by introspection, with file-based caching.
+
+    Introspection omits deprecated input fields and arguments unless asked
+    for them, which would make a deprecation look like a removal in the
+    diff, so the query requests them explicitly.
+    """
     cache_file = cache_dir / f"{version}.graphql"
     if cache_file.is_file():
-        return cache_file.read_text(encoding="utf-8")
+        cached = cache_file.read_text(encoding="utf-8")
+        if cached.startswith(CACHE_MARKER):
+            return cached
+        logger.info("Refetching %s schema: cached copy predates deprecated input values", version)
 
     url = f"{base_url}/{version}"
-    query = get_introspection_query()
+    query = get_introspection_query(input_value_deprecation=True)
     response = client.post(url, json={"query": query}, timeout=30.0)
     response.raise_for_status()
 
     introspection_data: dict[str, Any] = response.json()["data"]
     schema = build_client_schema(introspection_data)  # pyright: ignore[reportArgumentType]
-    sdl = print_schema(schema)
+    sdl = CACHE_MARKER + print_schema(schema)
 
     cache_dir.mkdir(parents=True, exist_ok=True)
     cache_file.write_text(sdl, encoding="utf-8")
