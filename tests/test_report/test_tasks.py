@@ -248,6 +248,104 @@ class TestGenerateTaskFiles:
         assert generate_task_files([noise], sample_config, sample_surface_with_operations) == {}
 
 
+class TestFoldingSchemaChanges:
+    """Schema changes named by a changelog entry become part of that entry's task."""
+
+    @staticmethod
+    def _entry(text: str, **overrides: object) -> ImpactItem:
+        fields: dict[str, object] = {
+            "severity": Severity.HIGH,
+            "affected_files": [Path("/tmp/diode/app/graphql/b.ts")],
+            "affected_features": ["BulkUpdate"],
+        }
+        fields.update(overrides)
+        return ImpactItem(
+            change=ChangeRecord(
+                source=ChangeSource.RSS,
+                title="Variants now support multiple barcodes",
+                description=f"<p>{text}</p>",
+                category=ChangeCategory.PLATFORM,
+                url="https://example.com/barcodes",
+            ),
+            **fields,  # type: ignore[arg-type]
+        )
+
+    def test_named_schema_change_folds_into_the_entry_task(
+        self, sample_config: ProjectConfig, sample_surface_with_operations: AppSurface
+    ) -> None:
+        entry = self._entry("ProductVariant.barcode is now deprecated; use barcodes instead.")
+        deprecation = _schema_item(
+            SchemaChangeType.FIELD_DEPRECATED,
+            Criticality.NON_BREAKING,
+            path="ProductVariant.barcode",
+            severity=Severity.MEDIUM,
+            affected_files=[Path("/tmp/diode/app/graphql/a.ts")],
+        )
+        files = generate_task_files(
+            [entry, deprecation], sample_config, sample_surface_with_operations, when=WHEN
+        )
+        assert set(files) == {"stage-3-task-index.md", "tasks_m01.md"}
+        tasks = files["tasks_m01.md"]
+        assert "**T-01.01 — Variants now support multiple barcodes**" in tasks
+        assert "T-01.02" not in tasks
+        assert "- **Files:** `app/graphql/b.ts`, `app/graphql/a.ts` (MODIFY)" in tasks
+        assert (
+            "    - Also covers schema change: ProductVariant.barcode (field_deprecated): "
+            "ProductVariant.barcode changed." in tasks
+        )
+        assert "`GetProducts` no longer reference `ProductVariant.barcode`" in tasks
+
+    def test_unnamed_schema_change_stays_separate(
+        self, sample_config: ProjectConfig, sample_surface_with_operations: AppSurface
+    ) -> None:
+        entry = self._entry("Variants can now carry several barcodes.")
+        deprecation = _schema_item(
+            SchemaChangeType.FIELD_DEPRECATED,
+            Criticality.NON_BREAKING,
+            path="ProductVariant.barcode",
+            severity=Severity.MEDIUM,
+        )
+        files = generate_task_files(
+            [entry, deprecation], sample_config, sample_surface_with_operations, when=WHEN
+        )
+        assert "tasks_m02.md" in files
+        assert "Stop using deprecated ProductVariant.barcode" in files["tasks_m02.md"]
+
+    def test_path_match_is_whole_token(
+        self, sample_config: ProjectConfig, sample_surface_with_operations: AppSurface
+    ) -> None:
+        entry = self._entry("Read ProductVariant.barcodes for the full set.")
+        deprecation = _schema_item(
+            SchemaChangeType.FIELD_DEPRECATED,
+            Criticality.NON_BREAKING,
+            path="ProductVariant.barcode",
+            severity=Severity.MEDIUM,
+        )
+        files = generate_task_files(
+            [entry, deprecation], sample_config, sample_surface_with_operations, when=WHEN
+        )
+        assert "tasks_m02.md" in files
+
+    def test_folded_task_takes_the_higher_severity(
+        self, sample_config: ProjectConfig, sample_surface_with_operations: AppSurface
+    ) -> None:
+        entry = self._entry(
+            "ProductVariantsBulkInput.barcode was removed.", severity=Severity.MEDIUM
+        )
+        removal = _schema_item(
+            SchemaChangeType.FIELD_REMOVED,
+            Criticality.BREAKING,
+            path="ProductVariantsBulkInput.barcode",
+            severity=Severity.HIGH,
+        )
+        files = generate_task_files(
+            [entry, removal], sample_config, sample_surface_with_operations, when=WHEN
+        )
+        assert set(files) == {"stage-3-task-index.md", "tasks_m01.md"}
+        assert "Milestone 1: Action required" in files["tasks_m01.md"]
+        assert "**T-01.01 — Variants now support multiple barcodes**" in files["tasks_m01.md"]
+
+
 class TestWriteTaskFiles:
     def test_writes_under_decompose_dir_and_removes_stale_task_files(
         self,

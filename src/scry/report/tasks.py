@@ -14,12 +14,13 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from pathlib import Path
 
-from scry.models.changes import SchemaChange
+from scry.models.changes import ChangeRecord, SchemaChange
 from scry.models.config import ProjectConfig
 from scry.models.enums import Criticality, SchemaChangeType, Severity
 from scry.models.impact import ImpactItem
 from scry.models.surface import AppSurface
-from scry.report._format import item_description, item_title
+from scry.report._format import item_description, item_title, severity_rank
+from scry.text import plain_text
 
 _MILESTONES: list[tuple[str, tuple[Severity, ...]]] = [
     ("Action required", (Severity.CRITICAL, Severity.HIGH)),
@@ -51,6 +52,48 @@ class _Task:
     files: list[str]  # empty when no file could be identified
     outline: list[str]
     acceptance: str
+
+
+@dataclass
+class _Planned:
+    """An impact to turn into a task, with the schema changes its text describes."""
+
+    item: ImpactItem
+    covered: list[ImpactItem]
+    severity: Severity
+
+
+def _plan(impacts: list[ImpactItem]) -> list[_Planned]:
+    """Fold each schema change into the changelog entry that names its path.
+
+    A changelog entry that mentions `Type.field` verbatim describes that
+    schema change, so both become one task carrying the higher severity.
+    Schema changes no entry names stay separate.
+    """
+    entries = [
+        (item, plain_text(f"{item.change.title} {item.change.description}"))
+        for item in impacts
+        if isinstance(item.change, ChangeRecord) and item.severity != Severity.INFO
+    ]
+    covered_by: dict[int, list[ImpactItem]] = {}
+    folded: set[int] = set()
+    for item in impacts:
+        if not isinstance(item.change, SchemaChange) or "." not in item.change.path:
+            continue
+        pattern = re.compile(rf"(?<![\w.]){re.escape(item.change.path)}(?![\w.])")
+        for entry, text in entries:
+            if pattern.search(text):
+                covered_by.setdefault(id(entry), []).append(item)
+                folded.add(id(item))
+                break
+    planned: list[_Planned] = []
+    for item in impacts:
+        if id(item) in folded:
+            continue
+        covered = covered_by.get(id(item), [])
+        severity = max((item, *covered), key=lambda i: severity_rank(i.severity)).severity
+        planned.append(_Planned(item, covered, severity))
+    return planned
 
 
 def _relative(path: Path, root: Path) -> str:
@@ -277,28 +320,42 @@ def generate_task_files(
     Milestones follow severity: Action required (CRITICAL, HIGH), Review
     (MEDIUM), Optional (LOW); INFO items are not tasks. Each impact becomes
     one MODIFY task listing every affected file (one change, one task, even
-    when it touches several files). Empty when nothing scores LOW or higher.
+    when it touches several files), and schema changes that a changelog
+    entry names verbatim are folded into that entry's task. Empty when
+    nothing scores LOW or higher.
     """
     when = when or datetime.now().date()
     name = decomposition_name(config, when)
+    planned = _plan(impacts)
     milestones: list[tuple[str, list[_Task]]] = []
     for label, severities in _MILESTONES:
-        items = sorted(
-            (i for i in impacts if i.severity in severities),
-            key=lambda i: (i.deadline or date.max, item_title(i)),
+        entries = sorted(
+            (e for e in planned if e.severity in severities),
+            key=lambda e: (e.item.deadline or date.max, item_title(e.item)),
         )
-        if not items:
+        if not entries:
             continue
         number = len(milestones) + 1
         tasks: list[_Task] = []
-        for item in items:
+        for entry in entries:
+            files = _task_files(entry.item, config, surface)
+            outline = _outline(entry.item, surface, next_api_version)
+            acceptance = [_acceptance(entry.item, config, next_api_version)]
+            for covered in entry.covered:
+                files.extend(_task_files(covered, config, surface))
+                if isinstance(covered.change, SchemaChange):
+                    outline.append(
+                        f"Also covers schema change: {covered.change.path} "
+                        f"({covered.change.change_type.value}): {covered.change.message}"
+                    )
+                acceptance.append(_acceptance(covered, config, next_api_version))
             tasks.append(
                 _Task(
                     id=f"T-{number:02d}.{len(tasks) + 1:02d}",
-                    title=_title(item),
-                    files=_task_files(item, config, surface),
-                    outline=_outline(item, surface, next_api_version),
-                    acceptance=_acceptance(item, config, next_api_version),
+                    title=_title(entry.item),
+                    files=list(dict.fromkeys(files)),
+                    outline=outline,
+                    acceptance=" ".join(acceptance),
                 )
             )
         milestones.append((label, tasks))
