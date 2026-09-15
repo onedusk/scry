@@ -55,6 +55,10 @@ class SchemaChangeType(StrEnum):
     IMPLEMENTED_INTERFACE_ADDED = "implemented_interface_added"
     ARG_DEFAULT_VALUE_CHANGE = "arg_default_value_change"
 
+    # Deprecations (scry's own pass; graphql-core's diff does not report them)
+    FIELD_DEPRECATED = "field_deprecated"
+    ENUM_VALUE_DEPRECATED = "enum_value_deprecated"
+
 
 class Criticality(StrEnum):
     """GraphQL schema change criticality level."""

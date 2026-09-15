@@ -1,5 +1,7 @@
 """Tests for scry.report.impact — impact report generator."""
 
+from pathlib import Path
+
 from scry.models.changes import ChangeRecord, SchemaChange
 from scry.models.config import ProjectConfig
 from scry.models.enums import (
@@ -184,3 +186,49 @@ class TestGenerateImpactReport:
         assert "diode API version: 2026-04" in report
         assert "Next shopify version: 2026-07" in report
         assert "scry version:" in report
+
+
+class TestDeprecationTrackerSchemaRows:
+    """Schema deprecations from the cross-referenced diff appear in the tracker."""
+
+    @staticmethod
+    def _items() -> list[ImpactItem]:
+        used = ImpactItem(
+            change=SchemaChange(
+                change_type=SchemaChangeType.FIELD_DEPRECATED,
+                criticality=Criticality.NON_BREAKING,
+                path="ProductVariant.barcode",
+                message="ProductVariant.barcode was deprecated: Use `barcodes` instead.",
+            ),
+            severity=Severity.MEDIUM,
+            affected_files=[Path("/tmp/diode/app/graphql/barcode.ts")],
+            affected_features=["BulkUpdateVariantBarcodes"],
+        )
+        unused = ImpactItem(
+            change=SchemaChange(
+                change_type=SchemaChangeType.ENUM_VALUE_DEPRECATED,
+                criticality=Criticality.NON_BREAKING,
+                path="OrderSortKeys.PROCESSED_AT",
+                message="OrderSortKeys.PROCESSED_AT was deprecated: Use CREATED_AT.",
+            ),
+            severity=Severity.INFO,
+        )
+        return [used, unused]
+
+    def test_rows_show_target_version_and_definite_usage(
+        self, sample_config: ProjectConfig, sample_surface_with_operations: AppSurface
+    ) -> None:
+        report = generate_impact_report(
+            self._items(), sample_config, sample_surface_with_operations, next_api_version="2026-10"
+        )
+        assert "## Deprecation Tracker" in report
+        assert "| ProductVariant.barcode | 2026-10 | TBD | Yes | MEDIUM |" in report
+        assert "| OrderSortKeys.PROCESSED_AT | 2026-10 | TBD | No | INFO |" in report
+
+    def test_unknown_target_version(
+        self, sample_config: ProjectConfig, sample_surface_with_operations: AppSurface
+    ) -> None:
+        report = generate_impact_report(
+            self._items(), sample_config, sample_surface_with_operations
+        )
+        assert "| ProductVariant.barcode | Unknown | TBD | Yes | MEDIUM |" in report

@@ -16,6 +16,10 @@ Remediation of the April and June 2026 codebase audits.
   files that select the field, pass the input type through a variable, or
   use the enum value. Changes touching nothing in the inventory score INFO
   instead of HIGH, and enum-value changes now carry a `Type.VALUE` path.
+- Schema diff reports newly deprecated fields, input fields, and enum values
+  (graphql-core's diff only covers removals and additions). Deprecations of
+  members the project uses score MEDIUM, and every schema deprecation appears
+  in the Deprecation Tracker with a definite Yes/No usage column.
 - GitHub Actions CI running `ruff check`, `ruff format --check`, `pyright`, and
   `pytest` with coverage on every push and pull request to `main`.
 - `scry doctor` preflight command: manifest parsing, required environment

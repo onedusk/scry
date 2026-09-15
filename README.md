@@ -18,7 +18,7 @@ collect          inventory          diff              report
    |  Polaris        |  API version   |                  |
 ```
 
-**Collect** gathers changes from external sources. **Inventory** scans your project to build an API surface map. **Diff** cross-references them and scores severity: each schema change is attributed to the GraphQL operations that select the field, pass the input type, or use the enum value, and changelog entries are matched against operation names, fields, webhook topics, packages, and components. **Report** generates markdown reports with action items.
+**Collect** gathers changes from external sources. **Inventory** scans your project to build an API surface map. **Diff** cross-references them and scores severity: each schema change is attributed to the GraphQL operations that select the field, pass the input type, or use the enum value (newly deprecated members are detected alongside breaking and dangerous changes), and changelog entries are matched against operation names, fields, webhook topics, packages, and components. **Report** generates markdown reports with action items.
 
 The cross-reference is the point. A platform changelog has hundreds of entries, and most touch things your project never calls. Only the intersection of what changed and what you use makes it into the report, ranked by how much it will hurt.
 

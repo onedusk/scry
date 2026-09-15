@@ -166,6 +166,21 @@ class TestMatchSchemaChangesToSurface:
         assert items[0].severity == Severity.MEDIUM
         assert items[0].affected_features == ["GetProducts"]
 
+    def test_deprecation_of_selected_field_is_medium(
+        self, sample_old_schema: str, sample_surface_with_operations: AppSurface
+    ) -> None:
+        change = SchemaChange(
+            change_type=SchemaChangeType.FIELD_DEPRECATED,
+            criticality=Criticality.NON_BREAKING,
+            path="Product.barcode",
+            message="Product.barcode was deprecated: Use barcodes",
+        )
+        items = match_schema_changes_to_surface(
+            [change], sample_old_schema, sample_surface_with_operations
+        )
+        assert items[0].severity == Severity.MEDIUM
+        assert items[0].affected_features == ["GetProducts"]
+
     def test_input_type_passed_by_variable_attributes_its_field_changes(
         self, sample_old_schema: str, sample_new_schema: str
     ) -> None:

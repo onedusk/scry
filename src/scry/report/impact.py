@@ -7,11 +7,22 @@ from pathlib import Path
 import scry
 from scry.models.changes import ChangeRecord, SchemaChange
 from scry.models.config import ProjectConfig
-from scry.models.enums import ChangeCategory, Severity
+from scry.models.enums import ChangeCategory, SchemaChangeType, Severity
 from scry.models.impact import ImpactItem
 from scry.models.surface import AppSurface
 from scry.report._format import item_description, item_title, md_cell, severity_rank
 from scry.report.summary import generate_summary
+
+_DEPRECATION_CHANGE_TYPES = {
+    SchemaChangeType.FIELD_DEPRECATED,
+    SchemaChangeType.ENUM_VALUE_DEPRECATED,
+}
+
+
+def _is_deprecation(item: ImpactItem) -> bool:
+    if isinstance(item.change, SchemaChange):
+        return item.change.change_type in _DEPRECATION_CHANGE_TYPES
+    return item.change.category == ChangeCategory.DEPRECATION
 
 
 def _item_source(item: ImpactItem) -> str:
@@ -107,11 +118,7 @@ def generate_impact_report(
             lines.append("")
 
     # Deprecation Tracker
-    deprecation_items = [
-        i
-        for i in impacts
-        if isinstance(i.change, ChangeRecord) and i.change.category == ChangeCategory.DEPRECATION
-    ]
+    deprecation_items = [i for i in impacts if _is_deprecation(i)]
     if deprecation_items:
         lines.append("## Deprecation Tracker")
         lines.append("")
@@ -119,12 +126,17 @@ def generate_impact_report(
         lines.append("|---|---|---|---|---|")
         for item in deprecation_items:
             change = item.change
-            if not isinstance(change, ChangeRecord):
-                continue
-            title = md_cell(change.title)
-            deprecated_in = change.version or "Unknown"
-            removed_in = str(change.sunset_date) if change.sunset_date else "TBD"
-            uses = "Yes" if item.affected_files else "Unknown"
+            if isinstance(change, SchemaChange):
+                # Schema deprecations are cross-referenced, so usage is definite.
+                title = md_cell(change.path)
+                deprecated_in = next_api_version or "Unknown"
+                removed_in = "TBD"
+                uses = "Yes" if item.affected_files else "No"
+            else:
+                title = md_cell(change.title)
+                deprecated_in = change.version or "Unknown"
+                removed_in = str(change.sunset_date) if change.sunset_date else "TBD"
+                uses = "Yes" if item.affected_files else "Unknown"
             status = item.severity.value.upper()
             lines.append(f"| {title} | {deprecated_in} | {removed_in} | {uses} | {status} |")
         lines.append("")

@@ -31,6 +31,8 @@ logger = logging.getLogger(__name__)
 _CRITICALITY_SEVERITY: dict[Criticality, Severity] = {
     Criticality.BREAKING: Severity.HIGH,
     Criticality.DANGEROUS: Severity.MEDIUM,
+    # Deprecations: same footing as a DEPRECATION changelog entry.
+    Criticality.NON_BREAKING: Severity.MEDIUM,
 }
 
 
@@ -104,8 +106,9 @@ def match_schema_changes_to_surface(
 
     Operations are resolved against the schema they were written for (the
     project's current version), so removed members still resolve. Breaking
-    changes to referenced members score HIGH and dangerous ones MEDIUM;
-    changes that touch nothing in the inventory score INFO.
+    changes to referenced members score HIGH, dangerous changes and
+    deprecations MEDIUM; changes that touch nothing in the inventory score
+    INFO.
     """
     schema = build_schema(old_schema_sdl)
     resolved: list[tuple[GraphQLOperation, set[str]]] = []
@@ -118,9 +121,7 @@ def match_schema_changes_to_surface(
     items: list[ImpactItem] = []
     for change in changes:
         affected = [op for op, refs in resolved if change_affects(change.path, refs)]
-        severity = Severity.INFO
-        if affected:
-            severity = _CRITICALITY_SEVERITY.get(change.criticality, Severity.LOW)
+        severity = _CRITICALITY_SEVERITY[change.criticality] if affected else Severity.INFO
         items.append(
             ImpactItem(
                 change=change,

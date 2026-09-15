@@ -204,8 +204,13 @@ class TestAllChangeTypes:
         assert matches[0].criticality == criticality
 
     def test_cases_cover_every_schema_change_type(self) -> None:
+        """Every graphql-core change type has a case; deprecations are covered separately."""
         covered = {case[2] for case in _CHANGE_TYPE_CASES}
-        assert covered == set(SchemaChangeType)
+        deprecation_types = {
+            SchemaChangeType.FIELD_DEPRECATED,
+            SchemaChangeType.ENUM_VALUE_DEPRECATED,
+        }
+        assert covered == set(SchemaChangeType) - deprecation_types
 
 
 class TestExtractPath:
@@ -231,3 +236,44 @@ class TestExtractPath:
     def test_extracts_enum_value_as_type_dot_value(self) -> None:
         assert _extract_path("RED was removed from enum type Color.") == "Color.RED"
         assert _extract_path("BLUE was added to enum type Color.") == "Color.BLUE"
+
+
+class TestDeprecations:
+    """Tests for the deprecation pass in diff_schemas()."""
+
+    def test_newly_deprecated_field(self) -> None:
+        old_sdl = "type Query { a: String b: String }"
+        new_sdl = 'type Query { a: String @deprecated(reason: "Use b") b: String }'
+        changes = diff_schemas(old_sdl, new_sdl)
+        assert len(changes) == 1
+        assert changes[0].change_type == SchemaChangeType.FIELD_DEPRECATED
+        assert changes[0].criticality == Criticality.NON_BREAKING
+        assert changes[0].path == "Query.a"
+        assert changes[0].message == "Query.a was deprecated: Use b"
+
+    def test_already_deprecated_field_not_reported_again(self) -> None:
+        sdl = 'type Query { a: String @deprecated(reason: "Use b") b: String }'
+        assert diff_schemas(sdl, sdl) == []
+
+    def test_deprecated_input_field(self) -> None:
+        old_sdl = "type Query { a(i: In): String } input In { barcode: String barcodes: [String!] }"
+        new_sdl = (
+            "type Query { a(i: In): String } "
+            'input In { barcode: String @deprecated(reason: "Use barcodes") barcodes: [String!] }'
+        )
+        changes = diff_schemas(old_sdl, new_sdl)
+        assert [c.path for c in changes] == ["In.barcode"]
+        assert changes[0].change_type == SchemaChangeType.FIELD_DEPRECATED
+
+    def test_deprecated_enum_value(self) -> None:
+        old_sdl = "type Query { c: Color } enum Color { RED GREEN }"
+        new_sdl = 'type Query { c: Color } enum Color { RED GREEN @deprecated(reason: "Gone") }'
+        changes = diff_schemas(old_sdl, new_sdl)
+        assert [c.path for c in changes] == ["Color.GREEN"]
+        assert changes[0].change_type == SchemaChangeType.ENUM_VALUE_DEPRECATED
+
+    def test_deprecations_reported_alongside_graphql_core_changes(self) -> None:
+        old_sdl = "type Query { a: String b: String }"
+        new_sdl = 'type Query { a: String @deprecated(reason: "Use c") c: String }'
+        change_types = {c.change_type for c in diff_schemas(old_sdl, new_sdl)}
+        assert change_types == {SchemaChangeType.FIELD_REMOVED, SchemaChangeType.FIELD_DEPRECATED}
