@@ -69,7 +69,7 @@ def run_diff(
     if config.triage_model and changelog_impacts:
         try:
             changelog_impacts, triage = triage_changelog_impacts(
-                changelog_impacts, surface, config.triage_model
+                changelog_impacts, surface, config.triage_model, context=config.triage_context
             )
         except Exception:
             logger.warning("Claude triage failed; keeping deterministic scores", exc_info=True)

@@ -349,7 +349,9 @@ class TestTriageWiring:
         assert result.triage is None
 
     def test_triage_result_replaces_changelog_scores(self, tmp_path: Path) -> None:
-        config = _make_config(tmp_path).model_copy(update={"triage_model": "claude-opus-5"})
+        config = _make_config(tmp_path).model_copy(
+            update={"triage_model": "claude-opus-5", "triage_context": "Custom app."}
+        )
         collect = self._collect()
         surface = AppSurface(api_version="2026-04")
         judged = ImpactItem(change=collect.changes[0], severity=Severity.CRITICAL)
@@ -360,6 +362,7 @@ class TestTriageWiring:
             result = run_diff(collect, surface, config)
         mock.assert_called_once()
         assert mock.call_args.args[2] == "claude-opus-5"
+        assert mock.call_args.kwargs["context"] == "Custom app."
         assert result.impacts[0].severity == Severity.CRITICAL
         assert result.triage is triage
 

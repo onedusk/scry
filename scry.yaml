@@ -27,6 +27,7 @@ escalation_rules: []
 #   - "https://polaris.shopify.com/whats-new"
 # disabled_collectors: []
 # triage_model: "claude-opus-5"  # Claude judges changelog relevance; needs ANTHROPIC_API_KEY
+# triage_context: "Custom app for one merchant; deployed via Cloud Run"
 
 # Report output
 report_dir: "docs/api-changes"

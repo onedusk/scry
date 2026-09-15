@@ -186,9 +186,29 @@ class TestTriageChangelogImpacts:
         assert first["betas"] == ["server-side-fallback-2026-07-01"]
         assert first["system"][1]["cache_control"] == {"type": "ephemeral"}
         assert "query GetProducts" in first["system"][1]["text"]
+        assert "Project context: none provided" in first["system"][1]["text"]
         assert [i.severity for i in rescored] == [Severity.HIGH, Severity.INFO, Severity.HIGH]
         assert len(result.judgments) == 3
         assert result.input_tokens == 200
+
+    def test_context_and_date_are_in_the_cached_block(
+        self, sample_surface_with_operations: AppSurface
+    ) -> None:
+        change = _record("Entry")
+        client = _FakeClient([_response(_judgment(change.id))])
+        triage_changelog_impacts(
+            [ImpactItem(change=change, severity=Severity.INFO)],
+            sample_surface_with_operations,
+            "claude-opus-5",
+            client=client,
+            context="Custom app for one merchant; expiring offline tokens already enabled.",
+            today=date(2026, 9, 15),
+        )
+        block = client.calls[0]["system"][1]["text"]
+        assert block.startswith(
+            "Today's date: 2026-09-15\nProject context: Custom app for one merchant"
+        )
+        assert "already passed" in client.calls[0]["system"][0]["text"]
 
     def test_refused_chunk_keeps_deterministic_scores(
         self, sample_surface_with_operations: AppSurface, caplog: Any

@@ -70,6 +70,7 @@ changelog_rss_url: "https://shopify.dev/changelog/feed.xml"
 
 # Claude triage of changelog entries (needs ANTHROPIC_API_KEY)
 # triage_model: "claude-opus-5"
+# triage_context: "Custom app for one merchant, not on the App Store; deployed via Cloud Run"
 
 # Severity overrides
 escalation_rules:
@@ -105,6 +106,7 @@ Shopify is the platform scry was built against. The RSS and changelog-page colle
 | `design_system_urls` | No | Design-system changelog URLs to scrape (e.g. Polaris) |
 | `disabled_collectors` | No | Collector names to skip (`rss`, `changelog`, `schema`, `registry`, `polaris`, or an entry-point name) |
 | `triage_model` | No | Claude model that judges changelog relevance against the inventory (e.g. `claude-opus-5`); off when unset |
+| `triage_context` | No | Free-text facts the triage should know: distribution model, deployment path, features already enabled. Lets it rule out entries that do not apply |
 | `version_pin_pattern` | No | Regex whose first non-empty group is a pinned API version; `scry verify` lists every match and flags disagreements |
 | `version_pin_globs` | No | Extra globs (relative to root) to scan for pins beyond `source_patterns`, e.g. a codegen config |
 | `escalation_rules` | No | Severity override rules |

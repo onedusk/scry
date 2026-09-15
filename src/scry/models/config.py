@@ -61,6 +61,7 @@ class ProjectConfig(BaseModel):
 
     # Diff settings
     triage_model: str | None = None  # Claude model judging changelog relevance
+    triage_context: str | None = None  # Facts about the project the triage should know
 
     # Verify settings
     version_pin_pattern: str | None = None  # Regex; first non-empty group is a pinned API version

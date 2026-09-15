@@ -34,7 +34,10 @@ Remediation of the April and June 2026 codebase audits.
   fall back server-side, and a failed triage keeps the deterministic scores.
   Judgments are written to `triage.json` beside the reports and summarized in
   the report header; `scry doctor` warns when `triage_model` is set without
-  `ANTHROPIC_API_KEY`.
+  `ANTHROPIC_API_KEY`. The manifest's `triage_context` (distribution model,
+  deploy path, features already enabled) and today's date are sent with the
+  inventory, with a rule that a past deadline is relevant only when the
+  requirement is shown to be unmet.
 - Schema changes are cross-referenced against inventoried GraphQL operations
   (`scry.diff.references`): a change is attributed to the operations and
   files that select the field, pass the input type through a variable, or

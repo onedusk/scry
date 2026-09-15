@@ -60,6 +60,14 @@ enforcement, or null.
 - suggested_action: one or two sentences naming what to change in this project, \
 empty when not relevant.
 - rationale: one sentence.
+
+Two more rules:
+- The project context lists facts (distribution model, deployment path, features \
+already enabled). Use it to rule out entries that do not apply to this project.
+- Today's date is given. An entry whose stated deadline has already passed is a \
+requirement the project already meets, is exempt from, or is currently violating. \
+Mark it relevant only when the context or inventory shows the requirement is unmet, \
+and say which case applies in the rationale.
 """
 
 
@@ -136,14 +144,19 @@ def triage_changelog_impacts(
     model: str,
     client: anthropic.Anthropic | None = None,
     chunk_size: int = CHUNK_SIZE,
+    context: str | None = None,
+    today: date | None = None,
 ) -> tuple[list[ImpactItem], TriageResult]:
     """Ask Claude which changelog impacts affect the project and rescore them.
 
     Only ChangeRecord impacts other than SDK version bumps are judged. Entries
     the model does not return (a declined or failed chunk) keep their
-    deterministic scoring. Returns the rescored impacts and the raw judgments.
+    deterministic scoring. `context` is free text about the project (see
+    ProjectConfig.triage_context) and `today` anchors deadline judgments.
+    Returns the rescored impacts and the raw judgments.
     """
     client = client or anthropic.Anthropic()
+    today = today or date.today()
     candidates: list[tuple[ImpactItem, ChangeRecord]] = [
         (item, item.change)
         for item in impacts
@@ -153,7 +166,11 @@ def triage_changelog_impacts(
         {"type": "text", "text": _SYSTEM_PROMPT},
         {
             "type": "text",
-            "text": "Project inventory:\n" + _inventory_json(surface),
+            "text": (
+                f"Today's date: {today.isoformat()}\n"
+                f"Project context: {context or 'none provided'}\n"
+                "Project inventory:\n" + _inventory_json(surface)
+            ),
             "cache_control": {"type": "ephemeral"},
         },
     ]

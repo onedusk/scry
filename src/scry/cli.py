@@ -468,6 +468,9 @@ escalation_rules: []
 # triage_model: str | null — Claude model that judges changelog relevance against the
 #   inventory, e.g. "claude-opus-5"; needs ANTHROPIC_API_KEY (default: null)
 # triage_model: "claude-opus-5"
+# triage_context: str | null — facts the triage should know (distribution model, deploy
+#   path, features already enabled) so it can rule out entries that do not apply
+# triage_context: "Custom app for one merchant; expiring offline tokens already enabled"
 
 # Verify settings
 # version_pin_pattern: str | null — regex whose first non-empty group is a pinned API
