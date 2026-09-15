@@ -105,6 +105,8 @@ Shopify is the platform scry was built against. The RSS and changelog-page colle
 | `design_system_urls` | No | Design-system changelog URLs to scrape (e.g. Polaris) |
 | `disabled_collectors` | No | Collector names to skip (`rss`, `changelog`, `schema`, `registry`, `polaris`, or an entry-point name) |
 | `triage_model` | No | Claude model that judges changelog relevance against the inventory (e.g. `claude-opus-5`); off when unset |
+| `version_pin_pattern` | No | Regex whose first non-empty group is a pinned API version; `scry verify` lists every match and flags disagreements |
+| `version_pin_globs` | No | Extra globs (relative to root) to scan for pins beyond `source_patterns`, e.g. a codegen config |
 | `escalation_rules` | No | Severity override rules |
 | `report_dir` | No | Report output directory (default: `docs/api-changes`) |
 | `decompose_dir` | No | Task index and spec output directory in the progressive-decomposition layout (default: `docs/decompose`) |
@@ -147,7 +149,7 @@ Reports are written to `{report_dir}/{YYYY-MM}/`:
 
 ## Verify
 
-`scry verify` is the deterministic acceptance check behind the schema tasks. It validates every inventoried GraphQL operation against the schema the project pins and against the newest published version, and lists members the operations use that the pinned version already deprecates (deprecation debt the diff alone cannot see). It exits 1 when any operation is invalid on either version, so it can gate a migration branch. `--json` prints the same result as data.
+`scry verify` is the deterministic acceptance check behind the schema tasks. It validates every inventoried GraphQL operation against the schema the project pins and against the newest published version, and lists members the operations use that the pinned version already deprecates (deprecation debt the diff alone cannot see). It exits 1 when any operation is invalid on either version, so it can gate a migration branch. With `version_pin_pattern` set it also lists every pinned API version in the source tree (plus `version_pin_globs`, for files like a codegen config outside `source_patterns`) and flags when they disagree with `api_version_source`. `--json` prints the same result as data.
 
 ## Dedup
 

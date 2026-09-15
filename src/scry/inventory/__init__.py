@@ -19,6 +19,7 @@ __all__ = [
     "GraphQLExtractor",
     "VersionExtractor",
     "WebhookExtractor",
+    "read_source_files",
     "run_all_extractors",
 ]
 

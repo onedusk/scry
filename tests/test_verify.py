@@ -14,8 +14,10 @@ from scry.verify import (
     DeprecatedUse,
     OperationCheck,
     VerifyResult,
+    VersionPin,
     check_operations,
     deprecation_debt,
+    find_version_pins,
     render_verify,
     run_verify,
 )
@@ -129,6 +131,77 @@ class TestRunVerify:
                 assert "schema_base_url" in str(e)
             else:  # pragma: no cover
                 raise AssertionError("expected RuntimeError")
+
+
+class TestVersionPins:
+    def test_first_non_empty_group_is_the_value(self, sample_config: ProjectConfig) -> None:
+        config = sample_config.model_copy(
+            update={"version_pin_pattern": r'ApiVersion\.(\w+)|api_version\s*=\s*"([^"]+)"'}
+        )
+        files = {
+            Path(
+                "/tmp/diode/.graphqlrc.ts"
+            ): "export default { apiVersion: ApiVersion.October25 };\n",
+            Path("/tmp/diode/shopify.app.toml"): '[webhooks]\napi_version = "2026-04"\n',
+        }
+        pins = find_version_pins(config, files)
+        assert pins == [
+            VersionPin(Path("/tmp/diode/.graphqlrc.ts"), 1, "October25"),
+            VersionPin(Path("/tmp/diode/shopify.app.toml"), 2, "2026-04"),
+        ]
+
+    def test_no_pattern_means_no_pins(self, sample_config: ProjectConfig) -> None:
+        assert find_version_pins(sample_config, {Path("a.ts"): "ApiVersion.October25"}) == []
+
+    def test_run_verify_scans_extra_globs(
+        self,
+        tmp_path: Path,
+        sample_config: ProjectConfig,
+        sample_old_schema: str,
+        sample_surface_with_operations: AppSurface,
+    ) -> None:
+        (tmp_path / "app").mkdir()
+        (tmp_path / "app" / "index.ts").write_text("export {};\n")
+        (tmp_path / ".graphqlrc.ts").write_text("apiVersion: ApiVersion.October25\n")
+        config = sample_config.model_copy(
+            update={
+                "root": tmp_path,
+                "version_pin_pattern": r"ApiVersion\.(\w+)",
+                "version_pin_globs": [".graphqlrc.ts"],
+            }
+        )
+
+        class _Collector:
+            old_schema_sdl = sample_old_schema
+            new_schema_sdl = None
+            current_api_version = "2026-04"
+            next_api_version = None
+
+            def collect(self, config: ProjectConfig) -> list[Any]:
+                return []
+
+        with (
+            patch("scry.verify.SchemaCollector", _Collector),
+            patch("scry.verify.run_all_extractors", return_value=sample_surface_with_operations),
+        ):
+            result = run_verify(config)
+        assert result.pins == [VersionPin(tmp_path / ".graphqlrc.ts", 1, "October25")]
+        assert result.pin_values == ["2026-04", "October25"]
+        text = render_verify(result, config)
+        assert "| .graphqlrc.ts | 1 | October25 |" in text
+        assert "Pinned versions disagree: 2026-04, October25." in text
+
+    def test_render_without_pattern_hints_and_agreement(self, sample_config: ProjectConfig) -> None:
+        hint = render_verify(VerifyResult(current_version="2026-04"), sample_config)
+        assert "Set `version_pin_pattern`" in hint
+        agree = render_verify(
+            VerifyResult(
+                current_version="2026-04",
+                pins=[VersionPin(Path("/tmp/diode/shopify.app.toml"), 2, "2026-04")],
+            ),
+            sample_config,
+        )
+        assert "All pins agree on 2026-04." in agree
 
 
 class TestRenderVerify:

@@ -6,6 +6,7 @@ import pytest
 from pydantic import ValidationError
 
 from scry.config import check_firecrawl_env, find_manifest, load_config
+from scry.models.config import ProjectConfig
 
 FIXTURES_DIR = Path(__file__).parent / "fixtures"
 
@@ -154,3 +155,17 @@ class TestFirecrawlEnvCheck:
         config = load_config(manifest, check_env=False)
         with pytest.raises(ValueError, match="FIRECRAWL_API_KEY"):
             check_firecrawl_env(config)
+
+
+class TestVersionPinPattern:
+    def test_invalid_regex_is_rejected(self, sample_config: ProjectConfig) -> None:
+        with pytest.raises(ValueError, match="Invalid regex pattern"):
+            ProjectConfig.model_validate(
+                {**sample_config.model_dump(), "version_pin_pattern": "ApiVersion\\.("}
+            )
+
+    def test_valid_regex_is_kept(self, sample_config: ProjectConfig) -> None:
+        config = ProjectConfig.model_validate(
+            {**sample_config.model_dump(), "version_pin_pattern": r"ApiVersion\.(\w+)"}
+        )
+        assert config.version_pin_pattern == r"ApiVersion\.(\w+)"

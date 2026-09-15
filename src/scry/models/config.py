@@ -60,12 +60,25 @@ class ProjectConfig(BaseModel):
     disabled_collectors: list[str] = []  # Collector names to skip, e.g. ["polaris"]
 
     # Diff settings
-    triage_model: str | None = (
-        None  # Claude model judging changelog relevance, e.g. "claude-opus-5"
-    )
+    triage_model: str | None = None  # Claude model judging changelog relevance
+
+    # Verify settings
+    version_pin_pattern: str | None = None  # Regex; first non-empty group is a pinned API version
+    version_pin_globs: list[str] = []  # Extra globs to scan for pins beyond source_patterns
 
     # Report output
     report_dir: str = "docs/api-changes"  # Relative to project root
-    decompose_dir: str = (
-        "docs/decompose"  # Task index/spec output (progressive-decomposition layout)
-    )
+    decompose_dir: str = "docs/decompose"  # Task index/spec output dir (decomposition layout)
+
+    @field_validator("version_pin_pattern")
+    @classmethod
+    def validate_pin_regex(cls, v: str | None) -> str | None:
+        """Ensure version_pin_pattern is a valid regex."""
+        if v is None:
+            return v
+        try:
+            re.compile(v)
+        except re.error as e:
+            msg = f"Invalid regex pattern: {e}"
+            raise ValueError(msg) from e
+        return v

@@ -469,6 +469,13 @@ escalation_rules: []
 #   inventory, e.g. "claude-opus-5"; needs ANTHROPIC_API_KEY (default: null)
 # triage_model: "claude-opus-5"
 
+# Verify settings
+# version_pin_pattern: str | null — regex whose first non-empty group is a pinned API
+#   version; `scry verify` lists every match and flags disagreements (default: null)
+# version_pin_pattern: 'ApiVersion\\.(\\w+)|api_version\\s*=\\s*"([^"]+)"'
+# version_pin_globs: list[str] — extra globs to scan for pins beyond source_patterns
+# version_pin_globs: [".graphqlrc.ts"]
+
 # Report output
 # report_dir: str — report output directory, relative to root (default: "docs/api-changes")
 report_dir: "docs/api-changes"
