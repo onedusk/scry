@@ -30,3 +30,4 @@ escalation_rules: []
 
 # Report output
 report_dir: "docs/api-changes"
+# decompose_dir: "docs/decompose"

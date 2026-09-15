@@ -15,7 +15,7 @@ collect          inventory          diff              report
    |  Schemas        |  Webhooks      |  Changelog match  |  change-plan-draft.md
    |  npm registry   |  Dependencies  |  Severity score   |  raw-changes.json
    |  Changelogs     |  UI components |  Claude triage   |  triage.json
-   |  Polaris        |  API version   |                  |
+   |  Polaris        |  API version   |                  |  stage-3-task-index.md
 ```
 
 **Collect** gathers changes from external sources. **Inventory** scans your project to build an API surface map. **Diff** cross-references them and scores severity: each schema change is attributed to the GraphQL operations that select the field, pass the input type, or use the enum value (newly deprecated members are detected alongside breaking and dangerous changes), and changelog entries are matched against operation names, fields, webhook topics, packages, and components. With `triage_model` set, Claude reads every changelog entry against the full inventory and replaces that substring match with a judgment: relevant or not, severity, the operations affected, any stated deadline, and a suggested action. Schema changes stay deterministic, and the substring scoring remains the fallback when triage is off or fails. **Report** generates markdown reports with action items.
@@ -79,6 +79,7 @@ escalation_rules:
 
 # Output
 report_dir: "docs/api-changes"
+# decompose_dir: "docs/decompose"
 ```
 
 A complete Shopify-flavored example lives in [`examples/sonit.yaml`](examples/sonit.yaml) — copy it and set `root` to the path of the project you want scry to scan, then adjust the platform-specific fields.
@@ -106,6 +107,7 @@ Shopify is the platform scry was built against. The RSS and changelog-page colle
 | `triage_model` | No | Claude model that judges changelog relevance against the inventory (e.g. `claude-opus-5`); off when unset |
 | `escalation_rules` | No | Severity override rules |
 | `report_dir` | No | Report output directory (default: `docs/api-changes`) |
+| `decompose_dir` | No | Task index and spec output directory in the progressive-decomposition layout (default: `docs/decompose`) |
 
 Third-party packages can add collectors by registering a zero-arg factory under
 the `scry.collectors` entry-point group; no scry code changes needed.
@@ -138,6 +140,7 @@ Reports are written to `{report_dir}/{YYYY-MM}/`:
 - **impact-report.md** -- Action Required and Review sections, deprecation tracker, SDK update table, and one-line low-priority items; entries that touch nothing in the inventory are counted, not listed
 - **change-plan-draft.md** -- Generated when action-required items exist; groups MEDIUM-or-higher changes by feature area with affected files and suggested milestones
 - **raw-changes.json** -- Machine-readable export of all collected changes
+- **docs/decompose/{platform}-changes-{YYYY-MM}/** -- Task index (`stage-3-task-index.md`) and per-milestone task specs (`tasks_m01.md`, ...) in the [progressive-decomposition](https://github.com/onedusk/pd) Stage 3/4 layout: one MODIFY task per affected file, grouped into Action required, Review, and Optional milestones, each with an outline and acceptance criteria. Pick up with `/decompose <name> review` or refine with `/decompose <name> 4`. The change plan draft is still written alongside.
 - **triage.json** -- Claude's per-entry judgments (relevance, severity, affected features, deadline, suggested action, rationale) when `triage_model` is set; the impact report header records the model and token usage
 
 ## Dedup

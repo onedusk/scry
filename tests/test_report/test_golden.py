@@ -11,7 +11,7 @@ then review the golden diff before committing.
 """
 
 import os
-from datetime import datetime, tzinfo
+from datetime import date, datetime, tzinfo
 from pathlib import Path
 
 import pytest
@@ -29,6 +29,7 @@ from scry.models.impact import ImpactItem
 from scry.models.surface import AppSurface
 from scry.report.change_plan import generate_change_plan
 from scry.report.impact import generate_impact_report
+from scry.report.tasks import generate_task_files
 
 FIXTURES_DIR = Path(__file__).parent.parent / "fixtures"
 
@@ -106,3 +107,20 @@ class TestGoldenReports:
         """Change plan markdown matches tests/fixtures/golden_change_plan.md."""
         plan = generate_change_plan(golden_impact_items, sample_config)
         _assert_matches_golden(plan, "golden_change_plan.md")
+
+    def test_task_files_match_golden(
+        self,
+        golden_impact_items: list[ImpactItem],
+        sample_config: ProjectConfig,
+        sample_surface_with_operations: AppSurface,
+    ) -> None:
+        """Task index and first milestone match tests/fixtures/golden_task_*.md."""
+        files = generate_task_files(
+            golden_impact_items,
+            sample_config,
+            sample_surface_with_operations,
+            next_api_version="2026-07",
+            when=date(2026, 6, 15),
+        )
+        _assert_matches_golden(files["stage-3-task-index.md"], "golden_task_index.md")
+        _assert_matches_golden(files["tasks_m01.md"], "golden_tasks_m01.md")

@@ -11,6 +11,12 @@ Remediation of the April and June 2026 codebase audits.
 
 ### Added
 
+- Task list output in the progressive-decomposition Stage 3/4 layout:
+  `docs/decompose/<platform>-changes-<YYYY-MM>/stage-3-task-index.md` plus one
+  `tasks_mNN.md` per milestone (Action required, Review, Optional). Each
+  affected file becomes a MODIFY task with an outline and acceptance criteria,
+  ready for `/decompose <name> review`. The change plan draft is still written
+  alongside. New `decompose_dir` manifest field.
 - Optional Claude triage of changelog entries (`triage_model` manifest field,
   `ANTHROPIC_API_KEY`). Every non-SDK entry is judged against the full
   inventory with structured outputs, replacing substring matching with a

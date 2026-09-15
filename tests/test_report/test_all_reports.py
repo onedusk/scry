@@ -49,6 +49,9 @@ class TestGenerateAllReports:
         )
         assert result.triage_path is not None
         assert result.triage_path.name == "triage.json"
+        assert result.task_index_path is not None
+        assert result.task_index_path.parent.parent == tmp_path / "docs" / "decompose"
+        assert (result.task_index_path.parent / "tasks_m01.md").is_file()
         assert result.triage_path.parent == result.impact_report_path.parent
         assert TriageResult.model_validate_json(result.triage_path.read_text()) == triage
         assert "> Triage: claude-opus-5, 1 entries judged" in result.impact_report_path.read_text()

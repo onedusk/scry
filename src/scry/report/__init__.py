@@ -18,6 +18,7 @@ from scry.report.summary import (
     generate_cli_summary,
     generate_summary,
 )
+from scry.report.tasks import generate_task_files, write_task_files
 
 __all__ = [
     "export_raw_changes",
@@ -28,7 +29,9 @@ __all__ = [
     "generate_cli_summary",
     "generate_impact_report",
     "generate_summary",
+    "generate_task_files",
     "severity_icon",
+    "write_task_files",
 ]
 
 _SEVERITY_ICONS: dict[Severity, str] = {
@@ -81,9 +84,13 @@ def generate_all_reports(
     if triage is not None:
         triage_path = export_triage(triage, report_dir / "triage.json")
 
+    # Task index and specs in the progressive-decomposition layout
+    task_index_path = write_task_files(impacts, config, surface, next_api_version)
+
     return ReportResult(
         impact_report_path=impact_path,
         change_plan_path=change_plan_path,
         raw_changes_path=raw_path,
         triage_path=triage_path,
+        task_index_path=task_index_path,
     )

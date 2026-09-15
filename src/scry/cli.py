@@ -156,6 +156,7 @@ def run(
             "change_plan_path": result.report.change_plan_path,
             "raw_changes_path": result.report.raw_changes_path,
             "triage_path": result.report.triage_path,
+            "task_index_path": result.report.task_index_path,
         }
         data = {
             "impacts": [i.model_dump(mode="json") for i in result.diff.impacts],
@@ -167,6 +168,8 @@ def run(
         typer.echo(generate_cli_summary(result.diff.impacts, config))
         if result.report.impact_report_path:
             typer.echo(f"Report written to {result.report.impact_report_path}")
+        if result.report.task_index_path:
+            typer.echo(f"Task index written to {result.report.task_index_path}")
     _exit_if_stages_failed(result.failed_stages)
 
 
@@ -274,6 +277,8 @@ def report(
         typer.echo(f"Raw changes: {result.report.raw_changes_path}")
     if result.report.triage_path:
         typer.echo(f"Triage: {result.report.triage_path}")
+    if result.report.task_index_path:
+        typer.echo(f"Task index: {result.report.task_index_path}")
     _exit_if_stages_failed(result.failed_stages)
 
 
@@ -430,6 +435,9 @@ escalation_rules: []
 # Report output
 # report_dir: str — report output directory, relative to root (default: "docs/api-changes")
 report_dir: "docs/api-changes"
+# decompose_dir: str — task index/spec output in the progressive-decomposition layout,
+#   relative to root (default: "docs/decompose")
+# decompose_dir: "docs/decompose"
 """
 
 

@@ -66,3 +66,6 @@ class ProjectConfig(BaseModel):
 
     # Report output
     report_dir: str = "docs/api-changes"  # Relative to project root
+    decompose_dir: str = (
+        "docs/decompose"  # Task index/spec output (progressive-decomposition layout)
+    )
