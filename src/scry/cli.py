@@ -405,6 +405,11 @@ escalation_rules: []
 # design_system_urls: list[str] — design-system changelog pages to scrape (default: [])
 # disabled_collectors: list[str] — collector names to skip (default: [])
 
+# Diff settings
+# triage_model: str | null — Claude model that judges changelog relevance against the
+#   inventory, e.g. "claude-opus-5"; needs ANTHROPIC_API_KEY (default: null)
+# triage_model: "claude-opus-5"
+
 # Report output
 # report_dir: str — report output directory, relative to root (default: "docs/api-changes")
 report_dir: "docs/api-changes"

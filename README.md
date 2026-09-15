@@ -14,11 +14,11 @@ collect          inventory          diff              report
    |  RSS feeds      |  GraphQL ops   |  Schema diff     |  impact-report.md
    |  Schemas        |  Webhooks      |  Changelog match  |  change-plan-draft.md
    |  npm registry   |  Dependencies  |  Severity score   |  raw-changes.json
-   |  Changelogs     |  UI components |                  |
+   |  Changelogs     |  UI components |  Claude triage   |
    |  Polaris        |  API version   |                  |
 ```
 
-**Collect** gathers changes from external sources. **Inventory** scans your project to build an API surface map. **Diff** cross-references them and scores severity: each schema change is attributed to the GraphQL operations that select the field, pass the input type, or use the enum value (newly deprecated members are detected alongside breaking and dangerous changes), and changelog entries are matched against operation names, fields, webhook topics, packages, and components. **Report** generates markdown reports with action items.
+**Collect** gathers changes from external sources. **Inventory** scans your project to build an API surface map. **Diff** cross-references them and scores severity: each schema change is attributed to the GraphQL operations that select the field, pass the input type, or use the enum value (newly deprecated members are detected alongside breaking and dangerous changes), and changelog entries are matched against operation names, fields, webhook topics, packages, and components. With `triage_model` set, Claude reads every changelog entry against the full inventory and replaces that substring match with a judgment: relevant or not, severity, the operations affected, any stated deadline, and a suggested action. Schema changes stay deterministic, and the substring scoring remains the fallback when triage is off or fails. **Report** generates markdown reports with action items.
 
 The cross-reference is the point. A platform changelog has hundreds of entries, and most touch things your project never calls. Only the intersection of what changed and what you use makes it into the report, ranked by how much it will hurt.
 
@@ -68,6 +68,9 @@ changelog_rss_url: "https://shopify.dev/changelog/feed.xml"
 #   - "https://polaris.shopify.com/whats-new"
 # disabled_collectors: []
 
+# Claude triage of changelog entries (needs ANTHROPIC_API_KEY)
+# triage_model: "claude-opus-5"
+
 # Severity overrides
 escalation_rules:
   - pattern: "productVariants|barcode"
@@ -100,6 +103,7 @@ Shopify is the platform scry was built against. The RSS and changelog-page colle
 | `changelog_page_urls` | No | URLs to scrape via Firecrawl |
 | `design_system_urls` | No | Design-system changelog URLs to scrape (e.g. Polaris) |
 | `disabled_collectors` | No | Collector names to skip (`rss`, `changelog`, `schema`, `registry`, `polaris`, or an entry-point name) |
+| `triage_model` | No | Claude model that judges changelog relevance against the inventory (e.g. `claude-opus-5`); off when unset |
 | `escalation_rules` | No | Severity override rules |
 | `report_dir` | No | Report output directory (default: `docs/api-changes`) |
 
@@ -111,6 +115,7 @@ the `scry.collectors` entry-point group; no scry code changes needed.
 | Variable | Required | Description |
 |----------|----------|-------------|
 | `FIRECRAWL_API_KEY` | If `changelog_page_urls` or `design_system_urls` is set | Enables changelog and design-system page scraping |
+| `ANTHROPIC_API_KEY` | If `triage_model` is set | Credentials for Claude triage (an `ant auth login` profile also works) |
 
 ## CLI commands
 
@@ -146,6 +151,7 @@ scry tracks seen changes in `.scry/history.json`. Subsequent runs only report ne
 - [feedparser](https://feedparser.readthedocs.io/) for RSS
 - [httpx](https://www.python-httpx.org/) for HTTP
 - [firecrawl](https://firecrawl.dev/) for web scraping (optional)
+- [anthropic](https://github.com/anthropics/anthropic-sdk-python) for Claude triage (optional)
 
 ## Development
 

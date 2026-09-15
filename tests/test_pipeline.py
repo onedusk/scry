@@ -17,6 +17,7 @@ from scry.models.impact import ImpactItem
 from scry.models.results import CollectResult, DiffResult, ReportResult
 from scry.models.state import RunState
 from scry.models.surface import AppSurface
+from scry.models.triage import TriageResult
 from scry.pipeline import run_collect, run_diff, run_inventory
 
 runner = CliRunner()
@@ -328,3 +329,47 @@ class TestCliExitCodes:
 
         assert result.exit_code == 1
         assert "3 stage(s) failed: collect, inventory, diff" in result.output
+
+
+class TestTriageWiring:
+    """run_diff hands changelog impacts to Claude triage only when a model is configured."""
+
+    @staticmethod
+    def _collect() -> CollectResult:
+        change = ChangeRecord(
+            source=ChangeSource.RSS, title="products change", category=ChangeCategory.FEATURE
+        )
+        return CollectResult(changes=[change])
+
+    def test_triage_skipped_without_model(self, tmp_path: Path) -> None:
+        config = _make_config(tmp_path)
+        with patch("scry.pipeline.triage_changelog_impacts") as mock:
+            result = run_diff(self._collect(), AppSurface(api_version="2026-04"), config)
+        mock.assert_not_called()
+        assert result.triage is None
+
+    def test_triage_result_replaces_changelog_scores(self, tmp_path: Path) -> None:
+        config = _make_config(tmp_path).model_copy(update={"triage_model": "claude-opus-5"})
+        collect = self._collect()
+        surface = AppSurface(api_version="2026-04")
+        judged = ImpactItem(change=collect.changes[0], severity=Severity.CRITICAL)
+        triage = TriageResult(model="claude-opus-5")
+        with patch(
+            "scry.pipeline.triage_changelog_impacts", return_value=([judged], triage)
+        ) as mock:
+            result = run_diff(collect, surface, config)
+        mock.assert_called_once()
+        assert mock.call_args.args[2] == "claude-opus-5"
+        assert result.impacts[0].severity == Severity.CRITICAL
+        assert result.triage is triage
+
+    def test_triage_failure_keeps_deterministic_scores(self, tmp_path: Path, caplog: Any) -> None:
+        config = _make_config(tmp_path).model_copy(update={"triage_model": "claude-opus-5"})
+        with (
+            patch("scry.pipeline.triage_changelog_impacts", side_effect=RuntimeError("no key")),
+            caplog.at_level(logging.WARNING),
+        ):
+            result = run_diff(self._collect(), AppSurface(api_version="2026-04"), config)
+        assert len(result.impacts) == 1
+        assert result.triage is None
+        assert "Claude triage failed" in caplog.text

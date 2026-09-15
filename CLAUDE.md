@@ -14,7 +14,7 @@ Installable Python package (`scry`) with a Typer CLI entry point. Four-stage pip
 
 - **Collect**: Gathers changes from RSS feed, Firecrawl-scraped changelog pages, GraphQL schema introspection, package registries, Polaris changelog
 - **Inventory**: Extracts what a project uses — GraphQL operations, webhooks, dependencies, UI components, API version — driven by the project manifest
-- **Diff**: Runs `graphql-core` schema diff, attributes each schema change to the inventoried operations that reference it (via `graphql-core` TypeInfo), matches changelog entries to inventory, scores severity using configurable escalation rules
+- **Diff**: Runs `graphql-core` schema diff, attributes each schema change to the inventoried operations that reference it (via `graphql-core` TypeInfo), matches changelog entries to inventory (substring match, or Claude structured-output triage when `triage_model` is set), scores severity using configurable escalation rules
 - **Report**: Generates impact report + draft change plan as markdown in `docs/api-changes/{YYYY-MM}/`
 
 All state is file-based (JSON + markdown). No database.
@@ -26,6 +26,7 @@ All state is file-based (JSON + markdown). No database.
 - `graphql-core` for schema parsing/diffing
 - `firecrawl-py` for web scraping (supplemental, not primary)
 - `feedparser` for RSS, `httpx` for HTTP
+- `anthropic` for optional Claude triage of changelog entries
 - `ruff` for linting/formatting, `pyright` for type checking, `pytest` for tests
 
 ## Key Design Decisions
@@ -35,6 +36,7 @@ All state is file-based (JSON + markdown). No database.
 - Project-agnostic via configuration manifests — onboard new projects with a config file, not code (ADR-006)
 - Regex extraction for GraphQL operations — language-agnostic, tag pattern configurable per manifest (ADR-003)
 - Escalation rules are config-driven, not hardcoded (defined in project manifest)
+- Claude triage is optional and only rescopes changelog entries; schema-change attribution stays deterministic (graphql-core TypeInfo) and is never sent to the model
 - Monthly cadence (PDR-001), reports in repo (PDR-002), never auto-modifies source (PDR-003)
 
 ## Package Structure

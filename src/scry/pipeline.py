@@ -9,12 +9,14 @@ from scry.diff import (
     match_changelog_to_surface,
     match_schema_changes_to_surface,
     score_severity,
+    triage_changelog_impacts,
 )
 from scry.models.changes import SchemaChange
 from scry.models.config import ProjectConfig
 from scry.models.impact import ImpactItem
 from scry.models.results import CollectResult, DiffResult, PipelineResult, ReportResult
 from scry.models.surface import AppSurface
+from scry.models.triage import TriageResult
 
 logger = logging.getLogger(__name__)
 
@@ -62,13 +64,23 @@ def run_diff(
     # Match changelog entries against project surface
     changelog_impacts = match_changelog_to_surface(collect_result.changes, surface)
 
+    # Let Claude override the substring match when a triage model is configured
+    triage: TriageResult | None = None
+    if config.triage_model and changelog_impacts:
+        try:
+            changelog_impacts, triage = triage_changelog_impacts(
+                changelog_impacts, surface, config.triage_model
+            )
+        except Exception:
+            logger.warning("Claude triage failed; keeping deterministic scores", exc_info=True)
+
     all_impacts = changelog_impacts + schema_impacts
 
     # Apply escalation rules
     scored = score_severity(all_impacts, config.escalation_rules)
 
     logger.info("diff stage completed in %.1fs", time.perf_counter() - start)
-    return DiffResult(schema_changes=schema_changes, impacts=scored)
+    return DiffResult(schema_changes=schema_changes, impacts=scored, triage=triage)
 
 
 def run_pipeline(config: ProjectConfig) -> PipelineResult:

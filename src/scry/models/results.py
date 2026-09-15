@@ -7,6 +7,7 @@ from scry.models.changes import ChangeRecord, SchemaChange
 from scry.models.config import ProjectConfig
 from scry.models.impact import ImpactItem
 from scry.models.surface import AppSurface
+from scry.models.triage import TriageResult
 
 
 @dataclass
@@ -26,6 +27,7 @@ class DiffResult:
 
     schema_changes: list[SchemaChange] = field(default_factory=list)  # pyright: ignore[reportUnknownVariableType]
     impacts: list[ImpactItem] = field(default_factory=list)  # pyright: ignore[reportUnknownVariableType]
+    triage: TriageResult | None = None  # Claude judgments, when triage_model is set
 
 
 @dataclass

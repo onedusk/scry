@@ -11,6 +11,12 @@ Remediation of the April and June 2026 codebase audits.
 
 ### Added
 
+- Optional Claude triage of changelog entries (`triage_model` manifest field,
+  `ANTHROPIC_API_KEY`). Every non-SDK entry is judged against the full
+  inventory with structured outputs, replacing substring matching with a
+  relevance verdict, severity, affected operations, stated deadline, and a
+  suggested action. The inventory is prompt-cached across requests, refusals
+  fall back server-side, and a failed triage keeps the deterministic scores.
 - Schema changes are cross-referenced against inventoried GraphQL operations
   (`scry.diff.references`): a change is attributed to the operations and
   files that select the field, pass the input type through a variable, or

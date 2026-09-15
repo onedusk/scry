@@ -26,6 +26,7 @@ escalation_rules: []
 # design_system_urls:
 #   - "https://polaris.shopify.com/whats-new"
 # disabled_collectors: []
+# triage_model: "claude-opus-5"  # Claude judges changelog relevance; needs ANTHROPIC_API_KEY
 
 # Report output
 report_dir: "docs/api-changes"
