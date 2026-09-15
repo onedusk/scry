@@ -1,7 +1,9 @@
 """Tests for scry.report.generate_all_reports — files written to the report directory."""
 
+import json
 from pathlib import Path
 
+from scry.models.changes import SchemaChange
 from scry.models.config import ProjectConfig
 from scry.models.impact import ImpactItem
 from scry.models.surface import AppSurface
@@ -68,3 +70,33 @@ class TestGenerateAllReports:
         assert result.triage_path is None
         assert result.raw_changes_path is not None
         assert not (result.raw_changes_path.parent / "triage.json").exists()
+
+    def test_writes_schema_changes_json_when_diff_ran(
+        self,
+        tmp_path: Path,
+        sample_impact_items: list[ImpactItem],
+        sample_surface_with_operations: AppSurface,
+        sample_schema_change: SchemaChange,
+    ) -> None:
+        result = generate_all_reports(
+            sample_impact_items,
+            [],
+            _config(tmp_path),
+            sample_surface_with_operations,
+            schema_changes=[sample_schema_change],
+        )
+        assert result.schema_changes_path is not None
+        assert result.schema_changes_path.name == "schema-changes.json"
+        rows = json.loads(result.schema_changes_path.read_text())
+        assert [SchemaChange.model_validate(r) for r in rows] == [sample_schema_change]
+
+    def test_no_schema_changes_file_when_diff_did_not_run(
+        self,
+        tmp_path: Path,
+        sample_impact_items: list[ImpactItem],
+        sample_surface_with_operations: AppSurface,
+    ) -> None:
+        result = generate_all_reports(
+            sample_impact_items, [], _config(tmp_path), sample_surface_with_operations
+        )
+        assert result.schema_changes_path is None

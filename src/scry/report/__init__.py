@@ -2,7 +2,7 @@
 
 from datetime import datetime
 
-from scry.models.changes import ChangeRecord
+from scry.models.changes import ChangeRecord, SchemaChange
 from scry.models.config import ProjectConfig
 from scry.models.enums import Severity
 from scry.models.impact import ImpactItem
@@ -14,6 +14,7 @@ from scry.report.impact import generate_impact_report
 from scry.report.summary import (
     export_raw_changes,
     export_raw_changes_json,
+    export_schema_changes,
     export_triage,
     generate_cli_summary,
     generate_summary,
@@ -23,6 +24,7 @@ from scry.report.tasks import generate_task_files, write_task_files
 __all__ = [
     "export_raw_changes",
     "export_raw_changes_json",
+    "export_schema_changes",
     "export_triage",
     "generate_all_reports",
     "generate_change_plan",
@@ -55,6 +57,7 @@ def generate_all_reports(
     surface: AppSurface,
     collect_result: CollectResult | None = None,
     triage: TriageResult | None = None,
+    schema_changes: list[SchemaChange] | None = None,
 ) -> ReportResult:
     """Orchestrate all report generation and write files to the report directory."""
     report_dir = config.root / config.report_dir / datetime.now().strftime("%Y-%m")
@@ -79,6 +82,13 @@ def generate_all_reports(
     raw_path = report_dir / "raw-changes.json"
     export_raw_changes(changes, raw_path)
 
+    # Schema diff, so schema-sourced impacts can be traced like changelog ones
+    schema_changes_path = None
+    if schema_changes is not None:
+        schema_changes_path = export_schema_changes(
+            schema_changes, report_dir / "schema-changes.json"
+        )
+
     # Claude judgments, so the report's scores can be audited
     triage_path = None
     if triage is not None:
@@ -91,6 +101,7 @@ def generate_all_reports(
         impact_report_path=impact_path,
         change_plan_path=change_plan_path,
         raw_changes_path=raw_path,
+        schema_changes_path=schema_changes_path,
         triage_path=triage_path,
         task_index_path=task_index_path,
     )

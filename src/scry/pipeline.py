@@ -134,6 +134,7 @@ def run_pipeline(config: ProjectConfig) -> PipelineResult:
                 surface,
                 collect_result,
                 triage=diff_result.triage,
+                schema_changes=diff_result.schema_changes,
             )
             logger.info("report stage completed in %.1fs", time.perf_counter() - start)
         except Exception:

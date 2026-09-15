@@ -155,6 +155,7 @@ def run(
             "impact_report_path": result.report.impact_report_path,
             "change_plan_path": result.report.change_plan_path,
             "raw_changes_path": result.report.raw_changes_path,
+            "schema_changes_path": result.report.schema_changes_path,
             "triage_path": result.report.triage_path,
             "task_index_path": result.report.task_index_path,
         }
@@ -275,6 +276,8 @@ def report(
         typer.echo(f"Change plan: {result.report.change_plan_path}")
     if result.report.raw_changes_path:
         typer.echo(f"Raw changes: {result.report.raw_changes_path}")
+    if result.report.schema_changes_path:
+        typer.echo(f"Schema changes: {result.report.schema_changes_path}")
     if result.report.triage_path:
         typer.echo(f"Triage: {result.report.triage_path}")
     if result.report.task_index_path:

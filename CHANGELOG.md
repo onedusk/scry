@@ -11,6 +11,8 @@ Remediation of the April and June 2026 codebase audits.
 
 ### Added
 
+- `schema-changes.json` beside `raw-changes.json`: the schema diff is exported
+  so schema-sourced impacts and tasks have a source row to trace back to.
 - Task list output in the progressive-decomposition Stage 3/4 layout:
   `docs/decompose/<platform>-changes-<YYYY-MM>/stage-3-task-index.md` plus one
   `tasks_mNN.md` per milestone (Action required, Review, Optional). Each

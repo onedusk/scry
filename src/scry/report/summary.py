@@ -3,7 +3,7 @@
 import json
 from pathlib import Path
 
-from scry.models.changes import ChangeRecord
+from scry.models.changes import ChangeRecord, SchemaChange
 from scry.models.config import ProjectConfig
 from scry.models.enums import Severity
 from scry.models.impact import ImpactItem
@@ -60,4 +60,11 @@ def export_raw_changes_json(changes: list[ChangeRecord]) -> str:
 def export_triage(triage: TriageResult, output_path: Path) -> Path:
     """Serialize Claude's triage judgments to JSON and write to a file."""
     output_path.write_text(triage.model_dump_json(indent=2))
+    return output_path
+
+
+def export_schema_changes(schema_changes: list[SchemaChange], output_path: Path) -> Path:
+    """Serialize the schema diff to JSON so schema-sourced impacts have a source row."""
+    data = [c.model_dump(mode="json") for c in schema_changes]
+    output_path.write_text(json.dumps(data, indent=2))
     return output_path
