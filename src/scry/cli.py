@@ -155,6 +155,7 @@ def run(
             "impact_report_path": result.report.impact_report_path,
             "change_plan_path": result.report.change_plan_path,
             "raw_changes_path": result.report.raw_changes_path,
+            "triage_path": result.report.triage_path,
         }
         data = {
             "impacts": [i.model_dump(mode="json") for i in result.diff.impacts],
@@ -271,6 +272,8 @@ def report(
         typer.echo(f"Change plan: {result.report.change_plan_path}")
     if result.report.raw_changes_path:
         typer.echo(f"Raw changes: {result.report.raw_changes_path}")
+    if result.report.triage_path:
+        typer.echo(f"Triage: {result.report.triage_path}")
     _exit_if_stages_failed(result.failed_stages)
 
 
@@ -306,6 +309,20 @@ def doctor(
         failed = True
     else:
         typer.echo("[ok]   env: FIRECRAWL_API_KEY present or not required")
+
+    # Claude credentials when triage is configured (a profile can also supply them)
+    if config.triage_model:
+        import os
+
+        if os.environ.get("ANTHROPIC_API_KEY"):
+            typer.echo(
+                f"[ok]   env: ANTHROPIC_API_KEY present for triage_model {config.triage_model}"
+            )
+        else:
+            typer.echo(
+                f"[warn] env: ANTHROPIC_API_KEY not set; triage_model {config.triage_model} "
+                "needs it or an `ant auth login` profile"
+            )
 
     # Each source pattern matches at least one file
     for pattern in config.source_patterns:

@@ -13,6 +13,7 @@ from scry.models.enums import (
 )
 from scry.models.impact import ImpactItem
 from scry.models.surface import AppSurface
+from scry.models.triage import TriageResult
 from scry.report.impact import generate_impact_report
 
 
@@ -232,3 +233,33 @@ class TestDeprecationTrackerSchemaRows:
             self._items(), sample_config, sample_surface_with_operations
         )
         assert "| ProductVariant.barcode | Unknown | TBD | Yes | MEDIUM |" in report
+
+
+class TestTriageHeader:
+    def test_header_summarizes_triage_run(
+        self,
+        sample_impact_items: list[ImpactItem],
+        sample_config: ProjectConfig,
+        sample_surface_with_operations: AppSurface,
+    ) -> None:
+        triage = TriageResult(
+            model="claude-opus-5", input_tokens=1200, cache_read_input_tokens=900, output_tokens=80
+        )
+        report = generate_impact_report(
+            sample_impact_items, sample_config, sample_surface_with_operations, triage=triage
+        )
+        assert (
+            "> Triage: claude-opus-5, 0 entries judged (1200 input, 900 cached, 80 output tokens)"
+            in report
+        )
+
+    def test_header_omits_triage_when_not_run(
+        self,
+        sample_impact_items: list[ImpactItem],
+        sample_config: ProjectConfig,
+        sample_surface_with_operations: AppSurface,
+    ) -> None:
+        report = generate_impact_report(
+            sample_impact_items, sample_config, sample_surface_with_operations
+        )
+        assert "> Triage:" not in report

@@ -37,6 +37,7 @@ class ReportResult:
     impact_report_path: Path | None = None
     change_plan_path: Path | None = None
     raw_changes_path: Path | None = None
+    triage_path: Path | None = None
 
 
 @dataclass

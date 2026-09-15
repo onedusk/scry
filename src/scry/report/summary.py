@@ -7,6 +7,7 @@ from scry.models.changes import ChangeRecord
 from scry.models.config import ProjectConfig
 from scry.models.enums import Severity
 from scry.models.impact import ImpactItem
+from scry.models.triage import TriageResult
 
 
 def generate_summary(impacts: list[ImpactItem], config: ProjectConfig) -> str:
@@ -49,3 +50,9 @@ def export_raw_changes_json(changes: list[ChangeRecord]) -> str:
     """Serialize ChangeRecords to a JSON string."""
     data = [c.model_dump(mode="json") for c in changes]
     return json.dumps(data, indent=2)
+
+
+def export_triage(triage: TriageResult, output_path: Path) -> Path:
+    """Serialize Claude's triage judgments to JSON and write to a file."""
+    output_path.write_text(triage.model_dump_json(indent=2))
+    return output_path

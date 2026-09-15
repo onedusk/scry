@@ -17,6 +17,9 @@ Remediation of the April and June 2026 codebase audits.
   relevance verdict, severity, affected operations, stated deadline, and a
   suggested action. The inventory is prompt-cached across requests, refusals
   fall back server-side, and a failed triage keeps the deterministic scores.
+  Judgments are written to `triage.json` beside the reports and summarized in
+  the report header; `scry doctor` warns when `triage_model` is set without
+  `ANTHROPIC_API_KEY`.
 - Schema changes are cross-referenced against inventoried GraphQL operations
   (`scry.diff.references`): a change is attributed to the operations and
   files that select the field, pass the input type through a variable, or

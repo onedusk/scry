@@ -14,7 +14,7 @@ collect          inventory          diff              report
    |  RSS feeds      |  GraphQL ops   |  Schema diff     |  impact-report.md
    |  Schemas        |  Webhooks      |  Changelog match  |  change-plan-draft.md
    |  npm registry   |  Dependencies  |  Severity score   |  raw-changes.json
-   |  Changelogs     |  UI components |  Claude triage   |
+   |  Changelogs     |  UI components |  Claude triage   |  triage.json
    |  Polaris        |  API version   |                  |
 ```
 
@@ -138,6 +138,7 @@ Reports are written to `{report_dir}/{YYYY-MM}/`:
 - **impact-report.md** -- Prioritized list of changes with severity ratings, deprecation tracker, and SDK update tables
 - **change-plan-draft.md** -- Generated when action-required items exist; groups changes by feature area with affected files and suggested milestones
 - **raw-changes.json** -- Machine-readable export of all collected changes
+- **triage.json** -- Claude's per-entry judgments (relevance, severity, affected features, deadline, suggested action, rationale) when `triage_model` is set; the impact report header records the model and token usage
 
 ## Dedup
 

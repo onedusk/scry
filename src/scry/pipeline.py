@@ -128,7 +128,12 @@ def run_pipeline(config: ProjectConfig) -> PipelineResult:
         try:
             start = time.perf_counter()
             report_result = report.generate_all_reports(
-                diff_result.impacts, collect_result.changes, config, surface, collect_result
+                diff_result.impacts,
+                collect_result.changes,
+                config,
+                surface,
+                collect_result,
+                triage=diff_result.triage,
             )
             logger.info("report stage completed in %.1fs", time.perf_counter() - start)
         except Exception:

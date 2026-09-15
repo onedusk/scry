@@ -8,11 +8,13 @@ from scry.models.enums import Severity
 from scry.models.impact import ImpactItem
 from scry.models.results import CollectResult, ReportResult
 from scry.models.surface import AppSurface
+from scry.models.triage import TriageResult
 from scry.report.change_plan import generate_change_plan
 from scry.report.impact import generate_impact_report
 from scry.report.summary import (
     export_raw_changes,
     export_raw_changes_json,
+    export_triage,
     generate_cli_summary,
     generate_summary,
 )
@@ -20,6 +22,7 @@ from scry.report.summary import (
 __all__ = [
     "export_raw_changes",
     "export_raw_changes_json",
+    "export_triage",
     "generate_all_reports",
     "generate_change_plan",
     "generate_cli_summary",
@@ -48,6 +51,7 @@ def generate_all_reports(
     config: ProjectConfig,
     surface: AppSurface,
     collect_result: CollectResult | None = None,
+    triage: TriageResult | None = None,
 ) -> ReportResult:
     """Orchestrate all report generation and write files to the report directory."""
     report_dir = config.root / config.report_dir / datetime.now().strftime("%Y-%m")
@@ -56,7 +60,7 @@ def generate_all_reports(
     next_api_version = collect_result.next_api_version if collect_result else None
 
     # Impact report
-    impact_md = generate_impact_report(impacts, config, surface, next_api_version)
+    impact_md = generate_impact_report(impacts, config, surface, next_api_version, triage)
     impact_path = report_dir / "impact-report.md"
     impact_path.write_text(impact_md)
 
@@ -72,8 +76,14 @@ def generate_all_reports(
     raw_path = report_dir / "raw-changes.json"
     export_raw_changes(changes, raw_path)
 
+    # Claude judgments, so the report's scores can be audited
+    triage_path = None
+    if triage is not None:
+        triage_path = export_triage(triage, report_dir / "triage.json")
+
     return ReportResult(
         impact_report_path=impact_path,
         change_plan_path=change_plan_path,
         raw_changes_path=raw_path,
+        triage_path=triage_path,
     )

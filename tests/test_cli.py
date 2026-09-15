@@ -151,6 +151,30 @@ class TestDoctor:
         assert result.exit_code == 0
         assert "doctor: all checks passed" in result.output
 
+    def test_triage_credentials_present(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """doctor confirms ANTHROPIC_API_KEY when a triage model is configured."""
+        monkeypatch.setenv("ANTHROPIC_API_KEY", "test-key")
+        manifest = _write_project(tmp_path, 'triage_model: "claude-opus-5"\n')
+        result = runner.invoke(app, ["doctor", "--project", str(manifest)])
+        assert result.exit_code == 0
+        assert "[ok]   env: ANTHROPIC_API_KEY present for triage_model claude-opus-5" in (
+            result.output
+        )
+
+    def test_triage_without_credentials_is_warning(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A missing key is a warning: the SDK may still find an ant auth login profile."""
+        monkeypatch.delenv("ANTHROPIC_API_KEY", raising=False)
+        manifest = _write_project(tmp_path, 'triage_model: "claude-opus-5"\n')
+        result = runner.invoke(app, ["doctor", "--project", str(manifest)])
+        assert result.exit_code == 0
+        assert "[warn] env: ANTHROPIC_API_KEY not set; triage_model claude-opus-5" in (
+            result.output
+        )
+
     def test_fails_on_unmatched_source_pattern(self, tmp_path: Path) -> None:
         """doctor exits 1 when a source pattern matches no files."""
         manifest = _write_project(tmp_path, source_pattern="missing/**/*.py")

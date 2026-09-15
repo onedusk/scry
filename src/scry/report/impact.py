@@ -10,6 +10,7 @@ from scry.models.config import ProjectConfig
 from scry.models.enums import ChangeCategory, SchemaChangeType, Severity
 from scry.models.impact import ImpactItem
 from scry.models.surface import AppSurface
+from scry.models.triage import TriageResult
 from scry.report._format import item_description, item_title, md_cell, severity_rank
 from scry.report.summary import generate_summary
 
@@ -68,6 +69,7 @@ def generate_impact_report(
     config: ProjectConfig,
     surface: AppSurface,
     next_api_version: str | None = None,
+    triage: TriageResult | None = None,
 ) -> str:
     """Generate a full markdown impact report."""
     now = datetime.now(tz=UTC)
@@ -81,6 +83,12 @@ def generate_impact_report(
     if next_api_version:
         lines.append(f"> Next {config.platform} version: {next_api_version}")
     lines.append(f"> scry version: {scry.__version__}")
+    if triage is not None:
+        lines.append(
+            f"> Triage: {triage.model}, {len(triage.judgments)} entries judged "
+            f"({triage.input_tokens} input, {triage.cache_read_input_tokens} cached, "
+            f"{triage.output_tokens} output tokens)"
+        )
     lines.append("")
 
     # Summary
