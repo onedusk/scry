@@ -319,19 +319,42 @@ def doctor(
             typer.echo(f"[ok]   source pattern '{pattern}' matches files")
 
     # Endpoint reachability (network problems are warnings, not failures)
-    for label, url in (
-        ("changelog_rss_url", config.changelog_rss_url),
-        ("schema_base_url", config.schema_base_url),
-    ):
-        if not url:
-            typer.echo(f"[skip] {label}: not configured")
-            continue
+    if config.changelog_rss_url is None:
+        typer.echo("[skip] changelog_rss_url: not configured")
+    else:
+        rss_url = config.changelog_rss_url
         try:
-            response = httpx.get(url, timeout=5.0, follow_redirects=True)
+            response = httpx.get(rss_url, timeout=5.0, follow_redirects=True)
         except httpx.HTTPError as e:
-            typer.echo(f"[warn] {label}: {url} unreachable ({e})")
+            typer.echo(f"[warn] changelog_rss_url: {rss_url} unreachable ({e})")
         else:
-            typer.echo(f"[ok]   {label}: {url} responded (HTTP {response.status_code})")
+            status = "[ok]  " if response.is_success else "[warn]"
+            typer.echo(
+                f"{status} changelog_rss_url: {rss_url} responded (HTTP {response.status_code})"
+            )
+
+    # The schema endpoint only answers at a versioned path, so probe it with an
+    # introspection query at the project's pinned API version.
+    if config.schema_base_url is None:
+        typer.echo("[skip] schema_base_url: not configured")
+    else:
+        from scry.collect.schema import (
+            _read_api_version,  # pyright: ignore[reportPrivateUsage]
+            _version_available,  # pyright: ignore[reportPrivateUsage]
+        )
+
+        base_url = config.schema_base_url
+        try:
+            version = _read_api_version(config)
+            with httpx.Client() as client:
+                available = _version_available(version, base_url, client)
+        except Exception as e:
+            typer.echo(f"[warn] schema_base_url: could not verify {base_url} ({e})")
+        else:
+            if available:
+                typer.echo(f"[ok]   schema_base_url: {base_url}/{version} serves a schema")
+            else:
+                typer.echo(f"[warn] schema_base_url: {base_url}/{version} did not return a schema")
 
     if failed:
         typer.echo("doctor: problems found", err=True)

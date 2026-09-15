@@ -62,7 +62,7 @@ webhook_config_path: "shopify.app.toml"
 
 # What to monitor
 changelog_rss_url: "https://shopify.dev/changelog/feed.xml"
-# schema_base_url: "https://shopify.dev/admin-graphql"
+# schema_base_url: "https://shopify.dev/admin-graphql-direct-proxy"
 # changelog_page_urls: []
 # design_system_urls:
 #   - "https://polaris.shopify.com/whats-new"

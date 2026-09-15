@@ -1,6 +1,7 @@
 """Tests for the scry doctor preflight command and CLI fail-fast config loading."""
 
 from pathlib import Path
+from typing import Any
 
 import httpx
 import pytest
@@ -11,7 +12,12 @@ from scry.cli import app
 runner = CliRunner()
 
 
-def _write_project(tmp_path: Path, extra: str = "", source_pattern: str = "app/**/*.ts") -> Path:
+def _write_project(
+    tmp_path: Path,
+    extra: str = "",
+    source_pattern: str = "app/**/*.ts",
+    api_version_source: str = "x:y",
+) -> Path:
     """Create a minimal project with one source file and a manifest, return manifest path."""
     src_dir = tmp_path / "app"
     src_dir.mkdir(exist_ok=True)
@@ -21,17 +27,40 @@ def _write_project(tmp_path: Path, extra: str = "", source_pattern: str = "app/*
         f"name: test\n"
         f"root: {tmp_path}\n"
         f"platform: shopify\n"
-        f'api_version_source: "x:y"\n'
+        f'api_version_source: "{api_version_source}"\n'
         f"source_patterns:\n"
         f'  - "{source_pattern}"\n' + extra
     )
     return manifest
 
 
+def _write_version_file(tmp_path: Path) -> str:
+    """Write a version source file and return its api_version_source spec."""
+    (tmp_path / "version.toml").write_text('[api]\nversion = "2026-04"\n')
+    return "version.toml:api.version"
+
+
 def _mock_response(
     url: str, timeout: float = 5.0, follow_redirects: bool = False
 ) -> httpx.Response:
     return httpx.Response(200, request=httpx.Request("GET", url))
+
+
+def _mock_status(status_code: int) -> Any:
+    def _get(url: str, timeout: float = 5.0, follow_redirects: bool = False) -> httpx.Response:
+        return httpx.Response(status_code, request=httpx.Request("GET", url))
+
+    return _get
+
+
+def _mock_post(status_code: int) -> Any:
+    def _post(self: Any, url: str, **kwargs: Any) -> httpx.Response:
+        body = (
+            {"data": {"__schema": {}}} if status_code == 200 else {"error": "Invalid API version"}
+        )
+        return httpx.Response(status_code, json=body, request=httpx.Request("POST", url))
+
+    return _post
 
 
 class TestDoctor:
@@ -41,12 +70,54 @@ class TestDoctor:
             tmp_path,
             'changelog_rss_url: "https://example.com/feed.xml"\n'
             'schema_base_url: "https://example.com/graphql"\n',
+            api_version_source=_write_version_file(tmp_path),
         )
         monkeypatch.setattr(httpx, "get", _mock_response)
+        monkeypatch.setattr(httpx.Client, "post", _mock_post(200))
         result = runner.invoke(app, ["doctor", "--project", str(manifest)])
         assert result.exit_code == 0
         assert "doctor: all checks passed" in result.output
         assert "HTTP 200" in result.output
+        assert "[ok]   schema_base_url: https://example.com/graphql/2026-04 serves a schema" in (
+            result.output
+        )
+
+    def test_http_error_response_is_warning(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A 404 from the feed is reported as a warning, not as ok."""
+        manifest = _write_project(tmp_path, 'changelog_rss_url: "https://example.com/feed.xml"\n')
+        monkeypatch.setattr(httpx, "get", _mock_status(404))
+        result = runner.invoke(app, ["doctor", "--project", str(manifest)])
+        assert result.exit_code == 0
+        assert "[warn] changelog_rss_url: https://example.com/feed.xml responded (HTTP 404)" in (
+            result.output
+        )
+
+    def test_schema_endpoint_without_schema_is_warning(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        """A schema endpoint that refuses the pinned version is a warning."""
+        manifest = _write_project(
+            tmp_path,
+            'schema_base_url: "https://example.com/graphql"\n',
+            api_version_source=_write_version_file(tmp_path),
+        )
+        monkeypatch.setattr(httpx.Client, "post", _mock_post(400))
+        result = runner.invoke(app, ["doctor", "--project", str(manifest)])
+        assert result.exit_code == 0
+        assert "[warn] schema_base_url: https://example.com/graphql/2026-04 did not return" in (
+            result.output
+        )
+
+    def test_schema_check_without_version_file_is_warning(self, tmp_path: Path) -> None:
+        """The schema probe needs the pinned version; a missing source file is a warning."""
+        manifest = _write_project(tmp_path, 'schema_base_url: "https://example.com/graphql"\n')
+        result = runner.invoke(app, ["doctor", "--project", str(manifest)])
+        assert result.exit_code == 0
+        assert "[warn] schema_base_url: could not verify https://example.com/graphql" in (
+            result.output
+        )
 
     def test_fails_on_invalid_manifest(self, tmp_path: Path) -> None:
         """doctor exits 1 when the manifest is missing required fields."""

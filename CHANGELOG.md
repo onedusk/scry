@@ -75,6 +75,12 @@ Remediation of the April and June 2026 codebase audits.
 
 ### Fixed
 
+- `scry doctor` reported any HTTP response as ok, so a 404 from the schema
+  endpoint passed. HTTP error responses now warn, and the schema endpoint is
+  probed with an introspection request at the project's pinned API version.
+- README and starter manifest pointed at `https://shopify.dev/admin-graphql`,
+  which returns 404 for introspection; the example is now
+  `https://shopify.dev/admin-graphql-direct-proxy`.
 - `scry run` and `scry report` exited 0 even when every pipeline stage failed;
   stage failures are now tracked, summarized in a footer, and produce a
   non-zero exit.
