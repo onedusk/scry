@@ -4,10 +4,14 @@ import logging
 import time
 
 from scry import collect, inventory, report, store
-from scry.diff import diff_schemas, match_changelog_to_surface, score_severity
+from scry.diff import (
+    diff_schemas,
+    match_changelog_to_surface,
+    match_schema_changes_to_surface,
+    score_severity,
+)
 from scry.models.changes import SchemaChange
 from scry.models.config import ProjectConfig
-from scry.models.enums import Criticality, Severity
 from scry.models.impact import ImpactItem
 from scry.models.results import CollectResult, DiffResult, PipelineResult, ReportResult
 from scry.models.surface import AppSurface
@@ -43,21 +47,20 @@ def run_diff(
     start = time.perf_counter()
 
     schema_changes: list[SchemaChange] = []
+    schema_impacts: list[ImpactItem] = []
     if collect_result.old_schema_sdl and collect_result.new_schema_sdl:
         schema_changes = diff_schemas(collect_result.old_schema_sdl, collect_result.new_schema_sdl)
-        logger.info("Schema diff found %d changes", len(schema_changes))
+        schema_impacts = match_schema_changes_to_surface(
+            schema_changes, collect_result.old_schema_sdl, surface
+        )
+        logger.info(
+            "Schema diff found %d changes, %d touching inventoried operations",
+            len(schema_changes),
+            sum(1 for item in schema_impacts if item.affected_features),
+        )
 
     # Match changelog entries against project surface
     changelog_impacts = match_changelog_to_surface(collect_result.changes, surface)
-
-    # Convert schema changes to ImpactItems
-    schema_impacts = [
-        ImpactItem(
-            change=sc,
-            severity=(Severity.HIGH if sc.criticality == Criticality.BREAKING else Severity.MEDIUM),
-        )
-        for sc in schema_changes
-    ]
 
     all_impacts = changelog_impacts + schema_impacts
 

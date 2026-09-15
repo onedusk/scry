@@ -227,3 +227,7 @@ class TestExtractPath:
     def test_fallback_to_full_description(self) -> None:
         desc = "something unexpected happened"
         assert _extract_path(desc) == desc
+
+    def test_extracts_enum_value_as_type_dot_value(self) -> None:
+        assert _extract_path("RED was removed from enum type Color.") == "Color.RED"
+        assert _extract_path("BLUE was added to enum type Color.") == "Color.BLUE"

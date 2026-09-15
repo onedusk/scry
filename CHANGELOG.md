@@ -11,6 +11,11 @@ Remediation of the April and June 2026 codebase audits.
 
 ### Added
 
+- Schema changes are cross-referenced against inventoried GraphQL operations
+  (`scry.diff.references`): a change is attributed to the operations and
+  files that select the field, pass the input type through a variable, or
+  use the enum value. Changes touching nothing in the inventory score INFO
+  instead of HIGH, and enum-value changes now carry a `Type.VALUE` path.
 - GitHub Actions CI running `ruff check`, `ruff format --check`, `pyright`, and
   `pytest` with coverage on every push and pull request to `main`.
 - `scry doctor` preflight command: manifest parsing, required environment

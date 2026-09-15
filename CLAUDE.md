@@ -14,7 +14,7 @@ Installable Python package (`scry`) with a Typer CLI entry point. Four-stage pip
 
 - **Collect**: Gathers changes from RSS feed, Firecrawl-scraped changelog pages, GraphQL schema introspection, package registries, Polaris changelog
 - **Inventory**: Extracts what a project uses — GraphQL operations, webhooks, dependencies, UI components, API version — driven by the project manifest
-- **Diff**: Runs `graphql-core` schema diff, matches changelog entries to inventory, scores severity using configurable escalation rules
+- **Diff**: Runs `graphql-core` schema diff, attributes each schema change to the inventoried operations that reference it (via `graphql-core` TypeInfo), matches changelog entries to inventory, scores severity using configurable escalation rules
 - **Report**: Generates impact report + draft change plan as markdown in `docs/api-changes/{YYYY-MM}/`
 
 All state is file-based (JSON + markdown). No database.
@@ -46,7 +46,7 @@ src/scry/             # Main package
   models/             # Pydantic models for all entities
   collect/            # Collector protocol + implementations
   inventory/          # Extractor protocol + implementations
-  diff/               # Schema diffing, changelog matching, severity scoring
+  diff/               # Schema diffing, operation cross-reference, changelog matching, severity scoring
   report/             # Impact report + change plan generators
   pipeline.py         # Orchestrator
   store/              # State management

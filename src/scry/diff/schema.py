@@ -10,6 +10,7 @@ from scry.models.enums import Criticality, SchemaChangeType
 _TYPE_FIELD_PATTERN = re.compile(r"\b([A-Z]\w+\.\w+)\b")
 _FIELD_ON_TYPE_PATTERN = re.compile(r"field (\w+) on (?:input )?type (\w+)")
 _DIRECTIVE_PATTERN = re.compile(r"^(@\w+) was ")
+_ENUM_VALUE_PATTERN = re.compile(r"^(\w+) was (?:removed from|added to) enum type (\w+)\.")
 _NAME_WAS_PATTERN = re.compile(r"^(\w+) was ")
 
 
@@ -20,6 +21,7 @@ def _extract_path(description: str) -> str:
     - "Product.barcode was removed." → "Product.barcode"
     - "A required field sku on input type ProductInput was added." → "ProductInput.sku"
     - "@deprecated was removed." → "@deprecated"
+    - "RED was removed from enum type Color." → "Color.RED"
     - "ProductType was removed." → "ProductType"
     """
     match = _TYPE_FIELD_PATTERN.search(description)
@@ -31,6 +33,9 @@ def _extract_path(description: str) -> str:
     match = _DIRECTIVE_PATTERN.search(description)
     if match:
         return match.group(1)
+    match = _ENUM_VALUE_PATTERN.search(description)
+    if match:
+        return f"{match.group(2)}.{match.group(1)}"
     match = _NAME_WAS_PATTERN.search(description)
     if match:
         return match.group(1)
