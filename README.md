@@ -80,7 +80,7 @@ report_dir: "docs/api-changes"
 
 A complete Shopify-flavored example lives in [`examples/sonit.yaml`](examples/sonit.yaml) — copy it and set `root` to the path of the project you want scry to scan, then adjust the platform-specific fields.
 
-Shopify is the platform scry was built against. The RSS and changelog-page collectors work with any URL. The schema collector assumes Shopify-style quarterly `YYYY-MM` API versions, the registry collector reads npm only, and the Polaris collector is Shopify-specific. Other platforms work to the degree their conventions match; see the entry-point note below for adding collectors.
+Shopify is the platform scry was built against. The RSS and changelog-page collectors work with any URL. The schema collector assumes Shopify-style quarterly `YYYY-MM` API versions and probes forward from the pinned version to find the newest one the endpoint serves, the registry collector reads npm only, and the Polaris collector is Shopify-specific. Other platforms work to the degree their conventions match; see the entry-point note below for adding collectors.
 
 ### Manifest fields
 
@@ -96,7 +96,7 @@ Shopify is the platform scry was built against. The RSS and changelog-page colle
 | `webhook_config_path` | No | Path to webhook config file |
 | `component_tag_pattern` | No | Regex for UI component tags (e.g. `<s-`) |
 | `changelog_rss_url` | No | RSS feed URL for changelog monitoring |
-| `schema_base_url` | No | Base URL for GraphQL schema introspection |
+| `schema_base_url` | No | Base URL for GraphQL schema introspection; the pinned API version is diffed against the newest published version found by probing forward |
 | `changelog_page_urls` | No | URLs to scrape via Firecrawl |
 | `design_system_urls` | No | Design-system changelog URLs to scrape (e.g. Polaris) |
 | `disabled_collectors` | No | Collector names to skip (`rss`, `changelog`, `schema`, `registry`, `polaris`, or an entry-point name) |

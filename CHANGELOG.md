@@ -35,6 +35,10 @@ Remediation of the April and June 2026 codebase audits.
 
 ### Changed
 
+- Schema collector diffs the project's pinned API version against the newest
+  published version, probing forward one quarter at a time (previously only
+  the next quarter, so a project two versions behind never saw the upcoming
+  release's changes).
 - Default log level is now INFO (was WARNING); `--verbose` remains DEBUG.
 - Invalid manifests exit with code 3 and per-field guidance instead of a raw
   validation dump.

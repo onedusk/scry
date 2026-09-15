@@ -64,6 +64,44 @@ def _read_api_version(config: ProjectConfig) -> str:
     return _navigate_dotted_key(data, key_path)
 
 
+_MAX_VERSION_PROBES = 8  # quarterly versions to look ahead (two years)
+_PROBE_QUERY = "{ __schema { queryType { name } } }"
+
+
+def _version_available(version: str, base_url: str, client: httpx.Client) -> bool:
+    """Return True when the endpoint serves a schema for `version`.
+
+    Sends a minimal query instead of a full introspection. A 4xx response
+    (Shopify answers 400 for unpublished versions) means the version is not
+    available; a 5xx response is raised so it surfaces as a fetch failure.
+    """
+    response = client.post(f"{base_url}/{version}", json={"query": _PROBE_QUERY}, timeout=30.0)
+    if response.status_code >= 500:
+        response.raise_for_status()
+    if response.status_code != 200:
+        return False
+    try:
+        return "data" in response.json()
+    except ValueError:
+        return False
+
+
+def _latest_available_version(current: str, base_url: str, client: httpx.Client) -> str:
+    """Walk forward one quarter at a time from `current` and return the newest published version.
+
+    Stops at the first version the endpoint does not serve, or after
+    _MAX_VERSION_PROBES steps. Returns `current` when nothing newer exists.
+    """
+    latest = current
+    candidate = _next_quarterly_version(current)
+    for _ in range(_MAX_VERSION_PROBES):
+        if not _version_available(candidate, base_url, client):
+            break
+        latest = candidate
+        candidate = _next_quarterly_version(candidate)
+    return latest
+
+
 def _fetch_schema_sdl(
     version: str,
     base_url: str,
@@ -91,7 +129,11 @@ def _fetch_schema_sdl(
 
 
 class SchemaCollector:
-    """Fetches GraphQL schemas for the current and next API versions.
+    """Fetches GraphQL schemas for the project's API version and the newest published one.
+
+    The target version is found by probing forward quarter by quarter from
+    the project's pinned version, so a project several versions behind is
+    diffed against the latest release rather than only the next quarter.
 
     After collect() is called, the SDL strings and version info are
     available as instance attributes for run_all_collectors to read.
@@ -114,16 +156,28 @@ class SchemaCollector:
             logger.warning("Failed to read API version from config", exc_info=True)
             return []
 
-        next_version = _next_quarterly_version(current_version)
         cache_dir = config.root / ".cache" / "schemas"
-
         self.current_api_version = current_version
-        self.next_api_version = next_version
 
         try:
             with httpx.Client() as client:
                 self.old_schema_sdl = _fetch_schema_sdl(
                     current_version, config.schema_base_url, cache_dir, client
+                )
+                next_version = _latest_available_version(
+                    current_version, config.schema_base_url, client
+                )
+                if next_version == current_version:
+                    logger.info(
+                        "No API version newer than %s is published; skipping schema diff",
+                        current_version,
+                    )
+                    return []
+                self.next_api_version = next_version
+                logger.info(
+                    "Diffing API version %s against latest published %s",
+                    current_version,
+                    next_version,
                 )
                 self.new_schema_sdl = _fetch_schema_sdl(
                     next_version, config.schema_base_url, cache_dir, client

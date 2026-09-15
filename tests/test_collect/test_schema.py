@@ -53,6 +53,22 @@ class _MockResponse:
             )
 
 
+def _serve_versions(available: set[str], requested: list[str] | None = None) -> Any:
+    """Build an httpx.Client.post replacement that serves introspection JSON for
+    `available` versions and answers 400 (Shopify's "Invalid API version") otherwise."""
+    intro_json = _introspection_json()
+
+    def mock_post(self: Any, url: str, **kwargs: Any) -> _MockResponse:
+        if requested is not None:
+            requested.append(url)
+        version = url.rsplit("/", 1)[-1]
+        if version in available:
+            return _MockResponse(intro_json)
+        return _MockResponse({"error": "Invalid API version"}, status_code=400)
+
+    return mock_post
+
+
 class TestNextQuarterlyVersion:
     def test_q1_to_q2(self) -> None:
         assert _next_quarterly_version("2026-01") == "2026-04"
@@ -84,6 +100,46 @@ class TestSchemaCollector:
     def test_populates_instance_attrs(self, tmp_path: Path, monkeypatch: Any) -> None:
         """After collect(), instance has SDL and version strings."""
         config = _make_config(tmp_path)
+        monkeypatch.setattr(httpx.Client, "post", _serve_versions({"2026-04", "2026-07"}))
+        collector = SchemaCollector()
+        collector.collect(config)
+        assert collector.old_schema_sdl is not None
+        assert collector.new_schema_sdl is not None
+        assert collector.current_api_version == "2026-04"
+        assert collector.next_api_version == "2026-07"
+
+    def test_diffs_against_latest_published_version(
+        self, tmp_path: Path, monkeypatch: Any, caplog: Any
+    ) -> None:
+        """A project two versions behind is diffed against the newest published version."""
+        config = _make_config(tmp_path)
+        monkeypatch.setattr(
+            httpx.Client, "post", _serve_versions({"2026-04", "2026-07", "2026-10"})
+        )
+        collector = SchemaCollector()
+        with caplog.at_level(logging.INFO):
+            collector.collect(config)
+        assert collector.next_api_version == "2026-10"
+        assert collector.new_schema_sdl is not None
+        assert "Diffing API version 2026-04 against latest published 2026-10" in caplog.text
+
+    def test_no_newer_version_skips_diff(
+        self, tmp_path: Path, monkeypatch: Any, caplog: Any
+    ) -> None:
+        """When only the pinned version is published there is nothing to diff against."""
+        config = _make_config(tmp_path)
+        monkeypatch.setattr(httpx.Client, "post", _serve_versions({"2026-04"}))
+        collector = SchemaCollector()
+        with caplog.at_level(logging.INFO):
+            collector.collect(config)
+        assert collector.old_schema_sdl is not None
+        assert collector.new_schema_sdl is None
+        assert collector.next_api_version is None
+        assert "No API version newer than 2026-04 is published" in caplog.text
+
+    def test_lookahead_is_capped(self, tmp_path: Path, monkeypatch: Any) -> None:
+        """Probing stops after eight quarters even if the endpoint keeps answering."""
+        config = _make_config(tmp_path)
         intro_json = _introspection_json()
 
         def mock_post(self: Any, url: str, **kwargs: Any) -> _MockResponse:
@@ -92,10 +148,27 @@ class TestSchemaCollector:
         monkeypatch.setattr(httpx.Client, "post", mock_post)
         collector = SchemaCollector()
         collector.collect(config)
-        assert collector.old_schema_sdl is not None
-        assert collector.new_schema_sdl is not None
-        assert collector.current_api_version == "2026-04"
-        assert collector.next_api_version == "2026-07"
+        assert collector.next_api_version == "2028-04"
+
+    def test_probe_5xx_is_a_fetch_failure(
+        self, tmp_path: Path, monkeypatch: Any, caplog: Any
+    ) -> None:
+        """A server error while probing is reported, not mistaken for "no newer version"."""
+        config = _make_config(tmp_path)
+        intro_json = _introspection_json()
+
+        def mock_post(self: Any, url: str, **kwargs: Any) -> _MockResponse:
+            if url.endswith("/2026-04"):
+                return _MockResponse(intro_json)
+            return _MockResponse({}, status_code=503)
+
+        monkeypatch.setattr(httpx.Client, "post", mock_post)
+        collector = SchemaCollector()
+        with caplog.at_level(logging.WARNING):
+            collector.collect(config)
+        assert collector.new_schema_sdl is None
+        assert collector.next_api_version is None
+        assert "Schema fetch failed" in caplog.text
 
     def test_sdl_contains_types(self, tmp_path: Path, monkeypatch: Any) -> None:
         """The generated SDL contains the expected types from the fixture."""
@@ -112,28 +185,25 @@ class TestSchemaCollector:
         assert "Query" in (collector.old_schema_sdl or "")
 
     def test_posts_to_versioned_urls(self, tmp_path: Path, monkeypatch: Any) -> None:
-        """Introspection POSTs target base_url/{version} for both versions."""
+        """Fetch the pinned version, probe forward until a version is refused, fetch the latest."""
         config = _make_config(tmp_path)
-        intro_json = _introspection_json()
         requested: list[str] = []
-
-        def mock_post(self: Any, url: str, **kwargs: Any) -> _MockResponse:
-            requested.append(url)
-            return _MockResponse(intro_json)
-
-        monkeypatch.setattr(httpx.Client, "post", mock_post)
+        monkeypatch.setattr(
+            httpx.Client, "post", _serve_versions({"2026-04", "2026-07", "2026-10"}, requested)
+        )
         SchemaCollector().collect(config)
-        assert requested == ["https://proxy.test/2026-04", "https://proxy.test/2026-07"]
+        assert requested == [
+            "https://proxy.test/2026-04",
+            "https://proxy.test/2026-07",
+            "https://proxy.test/2026-10",
+            "https://proxy.test/2027-01",
+            "https://proxy.test/2026-10",
+        ]
 
     def test_caches_schema_files(self, tmp_path: Path, monkeypatch: Any) -> None:
         """Schema SDL is cached to .cache/schemas/ directory."""
         config = _make_config(tmp_path)
-        intro_json = _introspection_json()
-
-        def mock_post(self: Any, url: str, **kwargs: Any) -> _MockResponse:
-            return _MockResponse(intro_json)
-
-        monkeypatch.setattr(httpx.Client, "post", mock_post)
+        monkeypatch.setattr(httpx.Client, "post", _serve_versions({"2026-04", "2026-07"}))
         collector = SchemaCollector()
         collector.collect(config)
 
