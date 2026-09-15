@@ -10,6 +10,8 @@ from graphql import (
     GraphQLError,
     GraphQLSchema,
     ObjectFieldNode,
+    OperationDefinitionNode,
+    StringValueNode,
     TypeInfo,
     TypeInfoVisitor,
     VariableDefinitionNode,
@@ -34,6 +36,33 @@ _CRITICALITY_SEVERITY: dict[Criticality, Severity] = {
     # Deprecations: same footing as a DEPRECATION changelog entry.
     Criticality.NON_BREAKING: Severity.MEDIUM,
 }
+
+
+def embedded_documents(raw_query: str) -> list[str]:
+    """GraphQL documents passed as string arguments inside an operation.
+
+    Shopify's bulkOperationRunQuery takes the whole query to run as a
+    string; the fields it selects are part of the project's API surface
+    even though they are not selections of the outer document.
+    """
+    found: list[str] = []
+
+    class _Strings(Visitor):
+        def enter_string_value(self, node: StringValueNode, *_: object) -> None:
+            if "{" not in node.value:
+                return
+            try:
+                document = parse(node.value)
+            except GraphQLError:
+                return
+            if any(isinstance(d, OperationDefinitionNode) for d in document.definitions):
+                found.append(node.value)
+
+    try:
+        visit(parse(raw_query), _Strings())
+    except GraphQLError:
+        return []
+    return found
 
 
 class _ReferenceVisitor(Visitor):
@@ -73,15 +102,19 @@ def operation_references(schema: GraphQLSchema, raw_query: str) -> set[str]:
     Selected fields are recorded as "Type.field" (fields inside fragments
     resolve to the fragment's type), inline input objects as
     "InputType.field", enum literals as "EnumType.VALUE", and input object
-    types passed through variables by bare type name. Selections that do
-    not exist in `schema` are skipped.
+    types passed through variables by bare type name. GraphQL documents
+    embedded in string arguments (bulk operations) are followed. Selections
+    that do not exist in `schema` are skipped.
 
     Raises GraphQLSyntaxError when `raw_query` cannot be parsed.
     """
     type_info = TypeInfo(schema)
     visitor = _ReferenceVisitor(type_info)
     visit(parse(raw_query), TypeInfoVisitor(type_info, visitor))
-    return visitor.references
+    references = visitor.references
+    for document in embedded_documents(raw_query):
+        references |= operation_references(schema, document)
+    return references
 
 
 def change_affects(change_path: str, references: set[str]) -> bool:

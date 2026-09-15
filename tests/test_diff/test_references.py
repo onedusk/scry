@@ -9,6 +9,7 @@ from graphql import GraphQLSchema, GraphQLSyntaxError, build_schema
 
 from scry.diff.references import (
     change_affects,
+    embedded_documents,
     match_schema_changes_to_surface,
     operation_references,
 )
@@ -26,7 +27,10 @@ interface Node { id: ID! }
 type ProductConnection { nodes: [Product!]! }
 type Product implements Node { id: ID! title: String! barcode: String }
 enum Status { ACTIVE DRAFT }
-type Mutation { productUpdate(input: ProductInput!, variants: [VariantInput!]): Product }
+type Mutation {
+  productUpdate(input: ProductInput!, variants: [VariantInput!]): Product
+  bulkOperationRunQuery(query: String!): Product
+}
 input ProductInput { title: String }
 input VariantInput { id: ID! barcode: String }
 """
@@ -92,6 +96,20 @@ class TestOperationReferences:
     def test_unknown_selections_are_skipped(self, schema: GraphQLSchema) -> None:
         refs = operation_references(schema, "query Q { nope { id } }")
         assert refs == {"Query.nope"}
+
+    def test_follows_documents_embedded_in_string_arguments(self, schema: GraphQLSchema) -> None:
+        raw = (
+            'mutation Bulk { bulkOperationRunQuery(query: """\n'
+            "      { products { nodes { id barcode } } }\n"
+            '      """) { id } }'
+        )
+        refs = operation_references(schema, raw)
+        assert {"Mutation.bulkOperationRunQuery", "Query.products", "Product.barcode"} <= refs
+
+    def test_embedded_documents_ignores_plain_strings(self) -> None:
+        raw = 'mutation M { productUpdate(input: {title: "not { a query"}) { id } }'
+        assert embedded_documents(raw) == []
+        assert embedded_documents("query {") == []
 
     def test_invalid_query_raises(self, schema: GraphQLSchema) -> None:
         with pytest.raises(GraphQLSyntaxError):

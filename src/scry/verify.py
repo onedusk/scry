@@ -16,7 +16,7 @@ from pathlib import Path
 from graphql import GraphQLError, build_schema, parse, validate
 
 from scry.collect.schema import SchemaCollector
-from scry.diff.references import operation_references
+from scry.diff.references import embedded_documents, operation_references
 from scry.diff.schema import deprecated_members
 from scry.inventory import read_source_files, run_all_extractors
 from scry.models.config import ProjectConfig
@@ -75,6 +75,11 @@ def check_operations(surface: AppSurface, sdl: str, version: str) -> list[Operat
     for op in surface.graphql_operations:
         try:
             errors = [error.message for error in validate(schema, parse(op.raw_query))]
+            for document in embedded_documents(op.raw_query):
+                errors += [
+                    f"embedded query: {error.message}"
+                    for error in validate(schema, parse(document))
+                ]
         except GraphQLError as error:
             errors = [error.message]
         checks.append(OperationCheck(op.name, op.file, version, errors))

@@ -50,6 +50,16 @@ class TestCheckOperations:
         assert target[0].version == "2026-07"
         assert target[0].errors == ["Cannot query field 'barcode' on type 'Product'."]
 
+    def test_embedded_query_is_validated_too(self) -> None:
+        sdl = (
+            "type Query { products: [Product!]! } type Product { id: ID! barcode: String } "
+            "type Mutation { bulkOperationRunQuery(query: String!): Product }"
+        )
+        raw = 'mutation Bulk { bulkOperationRunQuery(query: "{ products { id nope } }") { id } }'
+        surface = AppSurface(api_version="2026-04", graphql_operations=[_op("Bulk", raw)])
+        checks = check_operations(surface, sdl, "2026-04")
+        assert checks[0].errors == ["embedded query: Cannot query field 'nope' on type 'Product'."]
+
     def test_unparsable_operation_reports_syntax_error(self, sample_old_schema: str) -> None:
         surface = AppSurface(api_version="2026-04", graphql_operations=[_op("Broken", "query {")])
         checks = check_operations(surface, sample_old_schema, "2026-04")
