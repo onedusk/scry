@@ -224,7 +224,8 @@ class TestDeprecationTrackerSchemaRows:
         )
         assert "## Deprecation Tracker" in report
         assert "| ProductVariant.barcode | 2026-10 | TBD | Yes | MEDIUM |" in report
-        assert "| OrderSortKeys.PROCESSED_AT | 2026-10 | TBD | No | INFO |" in report
+        assert "OrderSortKeys.PROCESSED_AT" not in report
+        assert "1 other deprecation do not touch the inventory." in report
 
     def test_unknown_target_version(
         self, sample_config: ProjectConfig, sample_surface_with_operations: AppSurface
@@ -263,3 +264,86 @@ class TestTriageHeader:
             sample_impact_items, sample_config, sample_surface_with_operations
         )
         assert "> Triage:" not in report
+
+
+class TestTrimmedSections:
+    """Irrelevant entries are counted, MEDIUM items get a Review section, LOW items one line."""
+
+    @staticmethod
+    def _items() -> list[ImpactItem]:
+        medium = ImpactItem(
+            change=ChangeRecord(
+                source=ChangeSource.RSS,
+                title="New: Unlisted Product Status",
+                description="<p>Product <code>status</code> can now be <b>UNLISTED</b>.</p>",
+                category=ChangeCategory.FEATURE,
+            ),
+            severity=Severity.MEDIUM,
+            affected_features=["BulkProductsQuery"],
+            suggested_action="Handle UNLISTED wherever status is mapped.",
+        )
+        low = ImpactItem(
+            change=ChangeRecord(
+                source=ChangeSource.RSS,
+                title="Bulk queries now execute up to 4X faster",
+                description="<p>No code change is required.</p>",
+                category=ChangeCategory.PLATFORM,
+            ),
+            severity=Severity.LOW,
+        )
+        irrelevant = [
+            ImpactItem(
+                change=ChangeRecord(
+                    source=ChangeSource.RSS,
+                    title=f"Checkout change {n}",
+                    description="<p>Not for this app.</p>",
+                    category=ChangeCategory.BREAKING,
+                ),
+                severity=Severity.INFO,
+            )
+            for n in range(3)
+        ]
+        return [medium, low, *irrelevant]
+
+    def test_review_section_lists_medium_items_as_blocks(
+        self, sample_config: ProjectConfig, sample_surface_with_operations: AppSurface
+    ) -> None:
+        report = generate_impact_report(
+            self._items(), sample_config, sample_surface_with_operations
+        )
+        assert "## Review" in report
+        assert "### [MEDIUM] New: Unlisted Product Status" in report
+        assert "- **What changed**: Product status can now be UNLISTED." in report
+        assert "- **Suggested action**: Handle UNLISTED wherever status is mapped." in report
+
+    def test_irrelevant_entries_are_counted_not_listed(
+        self, sample_config: ProjectConfig, sample_surface_with_operations: AppSurface
+    ) -> None:
+        report = generate_impact_report(
+            self._items(), sample_config, sample_surface_with_operations
+        )
+        assert "Checkout change" not in report
+        assert "3 entries do not touch the inventory and are listed only in raw-changes.json." in (
+            report
+        )
+        assert "## Informational" not in report
+
+    def test_count_names_triage_file_when_triage_ran(
+        self, sample_config: ProjectConfig, sample_surface_with_operations: AppSurface
+    ) -> None:
+        report = generate_impact_report(
+            self._items(),
+            sample_config,
+            sample_surface_with_operations,
+            triage=TriageResult(model="claude-opus-5"),
+        )
+        assert "listed only in raw-changes.json and triage.json." in report
+
+    def test_low_priority_is_one_line_per_item(
+        self, sample_config: ProjectConfig, sample_surface_with_operations: AppSurface
+    ) -> None:
+        report = generate_impact_report(
+            self._items(), sample_config, sample_surface_with_operations
+        )
+        assert "## Low Priority" in report
+        assert "- Bulk queries now execute up to 4X faster: No code change is required." in report

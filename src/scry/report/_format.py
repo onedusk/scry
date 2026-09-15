@@ -3,6 +3,7 @@
 from scry.models.changes import SchemaChange
 from scry.models.enums import Severity
 from scry.models.impact import ImpactItem
+from scry.text import plain_text, summarize
 
 
 def severity_rank(severity: Severity) -> int:
@@ -21,10 +22,11 @@ def item_title(item: ImpactItem) -> str:
     return item.change.title
 
 
-def item_description(item: ImpactItem) -> str:
+def item_description(item: ImpactItem, limit: int = 400) -> str:
+    """Plain-text description, trimmed to `limit` characters for changelog entries."""
     if isinstance(item.change, SchemaChange):
         return item.change.message
-    return item.change.description
+    return summarize(plain_text(item.change.description), limit)
 
 
 def md_cell(value: str) -> str:

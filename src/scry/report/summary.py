@@ -16,10 +16,15 @@ def generate_summary(impacts: list[ImpactItem], config: ProjectConfig) -> str:
         return f"No changes detected that affect {config.name}."
 
     total = len(impacts)
-    affecting = sum(1 for i in impacts if i.affected_files)
+    affecting = sum(1 for i in impacts if i.severity != Severity.INFO)
     action_required = sum(1 for i in impacts if i.severity in (Severity.CRITICAL, Severity.HIGH))
 
-    deadlines = [i.deadline for i in impacts if i.deadline is not None]
+    # Deadlines on optional or irrelevant entries (often long past) would mislead here.
+    deadlines = [
+        i.deadline
+        for i in impacts
+        if i.deadline is not None and i.severity not in (Severity.LOW, Severity.INFO)
+    ]
     deadline_clause = ""
     if deadlines:
         earliest = min(deadlines)

@@ -9,10 +9,8 @@ cross-reference is already exact.
 
 from __future__ import annotations
 
-import html
 import json
 import logging
-import re
 from datetime import date
 from pathlib import Path
 
@@ -24,14 +22,13 @@ from scry.models.enums import ChangeCategory, Severity
 from scry.models.impact import ImpactItem
 from scry.models.surface import AppSurface
 from scry.models.triage import Judgment, TriageResponse, TriageResult
+from scry.text import plain_text
 
 logger = logging.getLogger(__name__)
 
 CHUNK_SIZE = 50
 _MAX_DESCRIPTION_CHARS = 4000
 _BETAS = ["server-side-fallback-2026-07-01"]
-_TAG_RE = re.compile(r"<[^>]+>")
-_WS_RE = re.compile(r"\s+")
 
 _SYSTEM_PROMPT = """\
 You triage a platform's changelog for one specific project. You receive the \
@@ -64,11 +61,6 @@ enforcement, or null.
 empty when not relevant.
 - rationale: one sentence.
 """
-
-
-def plain_text(fragment: str) -> str:
-    """Strip HTML tags and collapse whitespace so descriptions cost fewer tokens."""
-    return _WS_RE.sub(" ", html.unescape(_TAG_RE.sub(" ", fragment))).strip()
 
 
 def _inventory_json(surface: AppSurface) -> str:

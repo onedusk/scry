@@ -135,7 +135,7 @@ All commands accept `--project/-p` to specify a manifest path, `--verbose/-v` fo
 
 Reports are written to `{report_dir}/{YYYY-MM}/`:
 
-- **impact-report.md** -- Prioritized list of changes with severity ratings, deprecation tracker, and SDK update tables
+- **impact-report.md** -- Action Required and Review sections, deprecation tracker, SDK update table, and one-line low-priority items; entries that touch nothing in the inventory are counted, not listed
 - **change-plan-draft.md** -- Generated when action-required items exist; groups changes by feature area with affected files and suggested milestones
 - **raw-changes.json** -- Machine-readable export of all collected changes
 - **triage.json** -- Claude's per-entry judgments (relevance, severity, affected features, deadline, suggested action, rationale) when `triage_model` is set; the impact report header records the model and token usage

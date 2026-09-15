@@ -7,7 +7,7 @@ from pathlib import Path
 from types import SimpleNamespace
 from typing import Any
 
-from scry.diff.triage import plain_text, triage_changelog_impacts
+from scry.diff.triage import triage_changelog_impacts
 from scry.models.changes import ChangeRecord, SchemaChange
 from scry.models.enums import (
     ChangeCategory,
@@ -245,13 +245,6 @@ class TestTriageChangelogImpacts:
         assert client.calls == []
         assert len(rescored) == 1
         assert result.judgments == []
-
-
-class TestPlainText:
-    def test_strips_tags_and_entities(self) -> None:
-        assert (
-            plain_text("<p>Read &amp; write<br/>\n <b>barcodes</b></p>") == "Read & write barcodes"
-        )
 
 
 class TestCriticalityImport:

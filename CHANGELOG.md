@@ -53,6 +53,14 @@ Remediation of the April and June 2026 codebase audits.
 
 ### Changed
 
+- Impact report lists only entries that touch the inventory. Irrelevant
+  entries are counted in the summary and kept in `raw-changes.json` and
+  `triage.json`; MEDIUM items get a Review section (they were previously
+  omitted entirely); LOW items render one line each; the Deprecation Tracker
+  shows only used members plus a count of the rest; changelog descriptions
+  render as trimmed plain text instead of raw HTML. The summary counts
+  relevance by severity and takes its deadline only from MEDIUM-or-higher
+  items, so a stale deadline on an optional entry no longer leads the report.
 - Schema collector diffs the project's pinned API version against the newest
   published version, probing forward one quarter at a time (previously only
   the next quarter, so a project two versions behind never saw the upcoming

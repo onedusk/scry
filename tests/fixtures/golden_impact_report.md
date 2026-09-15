@@ -7,7 +7,7 @@
 
 ## Summary
 
-6 changes detected, 3 affect diode, 3 require action before 2026-07-01.
+6 changes detected, 6 affect diode, 3 require action before 2026-07-01.
 
 ## Action Required
 
@@ -38,6 +38,17 @@
 - **What changed**: Type SubscriptionContract was removed.
 - **Suggested action**: Review required
 
+## Review
+
+### [MEDIUM] Products barcode field deprecation
+
+- **Source**: rss
+- **Deadline**: 2026-07-01
+- **Affected files**: app/routes/products.ts
+- **Affected features**: barcode-sync
+- **What changed**: The barcode field on products will be removed in 2026-07.
+- **Suggested action**: Review required
+
 ## Deprecation Tracker
 
 | Field/Feature | Deprecated In | Removed In | Project Uses? | Status |
@@ -50,7 +61,6 @@
 |---|---|---|---|---|
 | @shopify/polaris | ^12.0.0 | 13.1.0 | major | Package @shopify/polaris has a newer version available. |
 
-## Informational
+## Low Priority
 
 - New webhook payload field: orders/create webhook now includes fulfillment_status.
-- @shopify/polaris: ^12.0.0 → 13.1.0: Package @shopify/polaris has a newer version available.
