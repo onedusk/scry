@@ -56,3 +56,36 @@ class TestMatchChangelogToSurface:
         items = match_changelog_to_surface(changes, sample_surface_with_operations)
         assert items[0].severity == Severity.HIGH
         assert len(items[0].affected_features) > 0
+
+    def test_action_required_match_scores_at_least_high(
+        self, sample_surface_with_operations: AppSurface
+    ) -> None:
+        """A platform-category entry flagged Action Required that matches → HIGH."""
+        changes = [
+            ChangeRecord(
+                source=ChangeSource.RSS,
+                title="Variants now support multiple barcodes",
+                description="The products query now returns a barcodes connection.",
+                category=ChangeCategory.PLATFORM,
+                action_required=True,
+            ),
+        ]
+        items = match_changelog_to_surface(changes, sample_surface_with_operations)
+        assert items[0].severity == Severity.HIGH
+        assert "GetProducts" in items[0].affected_features
+
+    def test_action_required_without_match_stays_info(
+        self, sample_surface_with_operations: AppSurface
+    ) -> None:
+        """The Action Required flag alone does not make an unmatched entry actionable."""
+        changes = [
+            ChangeRecord(
+                source=ChangeSource.RSS,
+                title="Checkout extensibility deadline",
+                description="Migrate checkout.liquid customizations.",
+                category=ChangeCategory.PLATFORM,
+                action_required=True,
+            ),
+        ]
+        items = match_changelog_to_surface(changes, sample_surface_with_operations)
+        assert items[0].severity == Severity.INFO

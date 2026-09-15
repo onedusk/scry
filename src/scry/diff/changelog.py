@@ -58,6 +58,9 @@ def match_changelog_to_surface(
         severity = _CATEGORY_SEVERITY.get(change.category, Severity.INFO)
         if not matched:
             severity = Severity.INFO
+        elif change.action_required and severity not in (Severity.CRITICAL, Severity.HIGH):
+            # The platform flagged the entry; a match in the inventory makes it actionable.
+            severity = Severity.HIGH
 
         items.append(
             ImpactItem(

@@ -44,6 +44,9 @@ Remediation of the April and June 2026 codebase audits.
   published version, probing forward one quarter at a time (previously only
   the next quarter, so a project two versions behind never saw the upcoming
   release's changes).
+- Changelog entries the platform flags Action Required score at least HIGH
+  when they match the inventory (the flag was collected but never used in
+  scoring, so a platform-category entry could land in Informational).
 - Default log level is now INFO (was WARNING); `--verbose` remains DEBUG.
 - Invalid manifests exit with code 3 and per-field guidance instead of a raw
   validation dump.
