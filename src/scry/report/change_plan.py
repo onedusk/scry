@@ -24,8 +24,16 @@ def _extract_version(impacts: list[ImpactItem]) -> str:
     return "upcoming"
 
 
+_PLANNED = (Severity.CRITICAL, Severity.HIGH, Severity.MEDIUM)
+
+
 def generate_change_plan(impacts: list[ImpactItem], config: ProjectConfig) -> str:
-    """Generate a markdown change plan draft for high-severity impacts."""
+    """Generate a markdown change plan draft from MEDIUM-or-higher impacts.
+
+    LOW items are optional improvements and INFO items touch nothing in the
+    inventory; neither belongs in a plan, and on a large feed they buried it.
+    """
+    impacts = [i for i in impacts if i.severity in _PLANNED]
     version = _extract_version(impacts)
     lines: list[str] = []
 

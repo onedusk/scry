@@ -61,6 +61,8 @@ Remediation of the April and June 2026 codebase audits.
   render as trimmed plain text instead of raw HTML. The summary counts
   relevance by severity and takes its deadline only from MEDIUM-or-higher
   items, so a stale deadline on an optional entry no longer leads the report.
+- Change plan draft is built from MEDIUM-or-higher impacts only; LOW and
+  irrelevant entries no longer fill its milestones and open questions.
 - Schema collector diffs the project's pinned API version against the newest
   published version, probing forward one quarter at a time (previously only
   the next quarter, so a project two versions behind never saw the upcoming

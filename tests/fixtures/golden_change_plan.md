@@ -27,15 +27,11 @@
 
 | Task | File | Action | Summary |
 |---|---|---|---|
-| 1 | TBD | Update | orders/create webhook now includes fulfillment_status. |
-| 2 | TBD | Update | Package @shopify/polaris has a newer version available. |
-| 3 | TBD | Update | Type SubscriptionContract was removed. |
+| 1 | TBD | Update | Type SubscriptionContract was removed. |
 
 ## Open Questions
 
 - [ ] What is the migration path for Product.barcode?
 - [ ] What is the migration path for Products barcode field deprecation?
-- [ ] What is the migration path for New webhook payload field?
-- [ ] What is the migration path for @shopify/polaris: ^12.0.0 → 13.1.0?
 - [ ] What is the migration path for SubscriptionContract?
 - [ ] Does this breaking change affect any unlisted files? (SubscriptionContract)

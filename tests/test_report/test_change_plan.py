@@ -87,3 +87,21 @@ class TestGenerateChangePlan:
         plan = generate_change_plan(items, sample_config)
         assert "CRITICAL items" in plan
         assert "HIGH items" in plan
+
+    def test_low_and_info_items_are_excluded(
+        self, sample_impact_items: list[ImpactItem], sample_config: ProjectConfig
+    ) -> None:
+        """Optional and irrelevant entries do not produce tasks or open questions."""
+        noise = ImpactItem(
+            change=ChangeRecord(
+                source=ChangeSource.RSS,
+                title="Checkout change",
+                description="Not for this app.",
+                category=ChangeCategory.BREAKING,
+            ),
+            severity=Severity.INFO,
+        )
+        plan = generate_change_plan([*sample_impact_items, noise], sample_config)
+        assert "Checkout change" not in plan
+        assert "New webhook payload field" not in plan  # the LOW fixture item
+        assert "Products barcode field deprecation" in plan  # MEDIUM stays
