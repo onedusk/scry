@@ -48,7 +48,7 @@ def decomposition_name(config: ProjectConfig, when: date) -> str:
 class _Task:
     id: str
     title: str
-    file: str | None
+    files: list[str]  # empty when no file could be identified
     outline: list[str]
     acceptance: str
 
@@ -60,7 +60,7 @@ def _relative(path: Path, root: Path) -> str:
         return str(path)
 
 
-def _task_files(item: ImpactItem, config: ProjectConfig, surface: AppSurface) -> list[str | None]:
+def _task_files(item: ImpactItem, config: ProjectConfig, surface: AppSurface) -> list[str]:
     """Files a task should name: matched operations, else the config a cited feature lives in."""
     files = [_relative(f, config.root) for f in item.affected_files]
     if files:
@@ -71,7 +71,7 @@ def _task_files(item: ImpactItem, config: ProjectConfig, surface: AppSurface) ->
         candidates.append(config.webhook_config_path)
     if features & set(surface.dependencies):
         candidates.extend(name for name in _DEPENDENCY_MANIFESTS if (config.root / name).is_file())
-    return list(dict.fromkeys(candidates)) or [None]
+    return list(dict.fromkeys(candidates))
 
 
 def _title(item: ImpactItem) -> str:
@@ -211,12 +211,12 @@ def _render_index(
     unidentified = 0
     for number, (_, tasks) in enumerate(milestones, 1):
         for task in tasks:
-            if task.file is None:
+            if not task.files:
                 unidentified += 1
-                continue
-            tags = by_file.setdefault(task.file, [])
-            if f"M{number:02d}" not in tags:
-                tags.append(f"M{number:02d}")
+            for file in task.files:
+                tags = by_file.setdefault(file, [])
+                if f"M{number:02d}" not in tags:
+                    tags.append(f"M{number:02d}")
     width = max((len(f) for f in by_file), default=0) + 4
     for file, tags in sorted(by_file.items()):
         lines.append(f"  {file.ljust(width)}MODIFY ({', '.join(tags)})")
@@ -243,11 +243,12 @@ def _render_tasks(number: int, label: str, tasks: list[_Task], config: ProjectCo
         "",
     ]
     for task in tasks:
-        file_line = (
-            f"  - **File:** `{task.file}` (MODIFY)"
-            if task.file
-            else "  - **File:** (not identified; see Affected in the outline)"
-        )
+        if not task.files:
+            file_line = "  - **File:** (not identified; see Affected in the outline)"
+        elif len(task.files) == 1:
+            file_line = f"  - **File:** `{task.files[0]}` (MODIFY)"
+        else:
+            file_line = "  - **Files:** " + ", ".join(f"`{f}`" for f in task.files) + " (MODIFY)"
         lines.extend(
             [
                 f"- [ ] **{task.id} — {task.title}**",
@@ -274,9 +275,9 @@ def generate_task_files(
     """Return {filename: markdown} for the task index and one task file per milestone.
 
     Milestones follow severity: Action required (CRITICAL, HIGH), Review
-    (MEDIUM), Optional (LOW); INFO items are not tasks. Each affected file
-    of an impact becomes one MODIFY task. Empty when nothing scores LOW or
-    higher.
+    (MEDIUM), Optional (LOW); INFO items are not tasks. Each impact becomes
+    one MODIFY task listing every affected file (one change, one task, even
+    when it touches several files). Empty when nothing scores LOW or higher.
     """
     when = when or datetime.now().date()
     name = decomposition_name(config, when)
@@ -291,16 +292,15 @@ def generate_task_files(
         number = len(milestones) + 1
         tasks: list[_Task] = []
         for item in items:
-            for file in _task_files(item, config, surface):
-                tasks.append(
-                    _Task(
-                        id=f"T-{number:02d}.{len(tasks) + 1:02d}",
-                        title=_title(item),
-                        file=file,
-                        outline=_outline(item, surface, next_api_version),
-                        acceptance=_acceptance(item, config, next_api_version),
-                    )
+            tasks.append(
+                _Task(
+                    id=f"T-{number:02d}.{len(tasks) + 1:02d}",
+                    title=_title(item),
+                    files=_task_files(item, config, surface),
+                    outline=_outline(item, surface, next_api_version),
+                    acceptance=_acceptance(item, config, next_api_version),
                 )
+            )
         milestones.append((label, tasks))
     if not milestones:
         return {}

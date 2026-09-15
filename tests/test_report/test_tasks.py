@@ -92,7 +92,7 @@ class TestGenerateTaskFiles:
         assert "Milestone 3: Optional" in files["tasks_m03.md"]
         assert all("Checkout change" not in content for content in files.values())
 
-    def test_one_task_per_affected_file(
+    def test_one_task_per_impact_listing_all_files(
         self, sample_config: ProjectConfig, sample_surface_with_operations: AppSurface
     ) -> None:
         item = _schema_item(
@@ -108,9 +108,14 @@ class TestGenerateTaskFiles:
         )
         tasks = files["tasks_m01.md"]
         assert "**T-01.01 — Remove use of Product.barcode**" in tasks
-        assert "**T-01.02 — Remove use of Product.barcode**" in tasks
-        assert "- **File:** `app/a.ts` (MODIFY)" in tasks
-        assert "- **File:** `app/b.ts` (MODIFY)" in tasks
+        assert "T-01.02" not in tasks
+        assert "- **Files:** `app/a.ts`, `app/b.ts` (MODIFY)" in tasks
+        index = files["stage-3-task-index.md"]
+        assert "app/a.ts" in index and "app/b.ts" in index
+        assert (
+            "**Totals:** 0 files created, 2 modifications, 0 deletions; 0 tasks have no file"
+            in (index)
+        )
 
     def test_webhook_and_package_features_map_to_config_files(
         self,
@@ -125,9 +130,9 @@ class TestGenerateTaskFiles:
         )
         files = generate_task_files([item], config, sample_surface_with_operations, when=WHEN)
         tasks = files["tasks_m01.md"]
-        assert "- **File:** `shopify.app.toml` (MODIFY)" in tasks
-        assert "- **File:** `package.json` (MODIFY)" in tasks
-        assert "**T-01.02 — Expiring tokens**" in tasks
+        assert "- **Files:** `shopify.app.toml`, `package.json` (MODIFY)" in tasks
+        assert "**T-01.01 — Expiring tokens**" in tasks
+        assert "T-01.02" not in tasks
 
     def test_feature_without_file_is_marked_unidentified(
         self, sample_config: ProjectConfig, sample_surface_with_operations: AppSurface

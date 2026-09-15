@@ -146,7 +146,7 @@ Reports are written to `{report_dir}/{YYYY-MM}/`:
 - **change-plan-draft.md** -- Generated when action-required items exist; groups MEDIUM-or-higher changes by feature area with affected files and suggested milestones
 - **raw-changes.json** -- Machine-readable export of all collected changes
 - **schema-changes.json** -- Machine-readable export of the schema diff (breaking, dangerous, and deprecation entries) when a schema was diffed
-- **docs/decompose/{platform}-changes-{YYYY-MM}/** -- Task index (`stage-3-task-index.md`) and per-milestone task specs (`tasks_m01.md`, ...) in the [progressive-decomposition](https://github.com/onedusk/pd) Stage 3/4 layout: one MODIFY task per affected file, grouped into Action required, Review, and Optional milestones, each with an outline and acceptance criteria. Pick up with `/decompose <name> review` or refine with `/decompose <name> 4`. The change plan draft is still written alongside.
+- **docs/decompose/{platform}-changes-{YYYY-MM}/** -- Task index (`stage-3-task-index.md`) and per-milestone task specs (`tasks_m01.md`, ...) in the [progressive-decomposition](https://github.com/onedusk/pd) Stage 3/4 layout: one MODIFY task per change listing every affected file, grouped into Action required, Review, and Optional milestones, each with an outline and acceptance criteria. Pick up with `/decompose <name> review` or refine with `/decompose <name> 4`. The change plan draft is still written alongside.
 - **triage.json** -- Claude's per-entry judgments (relevance, severity, affected features, deadline, suggested action, rationale) when `triage_model` is set; the impact report header records the model and token usage
 
 ## Verify
