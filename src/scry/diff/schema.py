@@ -51,7 +51,7 @@ def _extract_path(description: str) -> str:
     return description
 
 
-def _deprecated_members(schema: GraphQLSchema) -> dict[str, tuple[SchemaChangeType, str]]:
+def deprecated_members(schema: GraphQLSchema) -> dict[str, tuple[SchemaChangeType, str]]:
     """Map "Type.member" to (change type, reason) for every deprecated field,
     input field, and enum value in the schema."""
     members: dict[str, tuple[SchemaChangeType, str]] = {}
@@ -82,7 +82,7 @@ def _find_deprecations(old_schema: GraphQLSchema, new_schema: GraphQLSchema) -> 
     removals and additions, so a field that merely gains @deprecated would
     otherwise go unreported until it is removed.
     """
-    already = _deprecated_members(old_schema)
+    already = deprecated_members(old_schema)
     return [
         SchemaChange(
             change_type=change_type,
@@ -90,7 +90,7 @@ def _find_deprecations(old_schema: GraphQLSchema, new_schema: GraphQLSchema) -> 
             path=path,
             message=f"{path} was deprecated: {reason}",
         )
-        for path, (change_type, reason) in _deprecated_members(new_schema).items()
+        for path, (change_type, reason) in deprecated_members(new_schema).items()
         if path not in already
     ]
 

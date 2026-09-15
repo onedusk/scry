@@ -43,7 +43,7 @@ All state is file-based (JSON + markdown). No database.
 
 ```
 src/scry/             # Main package
-  cli.py              # Typer subcommands (run, collect, inventory, diff, report, init)
+  cli.py              # Typer subcommands (run, collect, inventory, diff, report, init, doctor, verify)
   config.py           # Project manifest loader
   models/             # Pydantic models for all entities
   collect/            # Collector protocol + implementations
@@ -51,6 +51,7 @@ src/scry/             # Main package
   diff/               # Schema diffing, operation cross-reference, changelog matching, severity scoring
   report/             # Impact report, change plan, and task list generators
   pipeline.py         # Orchestrator
+  verify.py           # scry verify: operation validation + deprecation debt against pinned/target schemas
   store/              # State management
 tests/                # pytest, mirrors package structure
 pyproject.toml        # Package metadata, deps, CLI entry point

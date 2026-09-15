@@ -286,6 +286,40 @@ def report(
 
 
 @app.command()
+def verify(
+    project: ProjectOption = None,
+    verbose: VerboseOption = False,
+    quiet: QuietOption = False,
+    json: JsonOption = False,
+) -> None:
+    """Validate inventoried operations against the pinned and target schemas.
+
+    Also lists members the operations use that the pinned version already
+    deprecates. Exits 1 when any operation is invalid on either version.
+    """
+    _setup_logging(verbose, quiet)
+    config = _resolve_config(project)
+
+    from scry.verify import render_verify, run_verify
+
+    try:
+        result = run_verify(config)
+    except RuntimeError as e:
+        typer.echo(f"verify: {e}", err=True)
+        raise typer.Exit(code=1) from e
+
+    if json:
+        import dataclasses
+        import json as json_mod
+
+        typer.echo(json_mod.dumps(dataclasses.asdict(result), indent=2, default=str))
+    else:
+        typer.echo(render_verify(result, config))
+    if result.failed:
+        raise typer.Exit(code=1)
+
+
+@app.command()
 def doctor(
     project: ProjectOption = None,
     verbose: VerboseOption = False,

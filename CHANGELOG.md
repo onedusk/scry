@@ -11,6 +11,10 @@ Remediation of the April and June 2026 codebase audits.
 
 ### Added
 
+- `scry verify`: validates every inventoried GraphQL operation against the
+  pinned schema and the newest published one, lists deprecated members the
+  operations still use on the pinned version, and exits 1 when any operation
+  is invalid. This is the check behind the schema tasks' acceptance criteria.
 - `schema-changes.json` beside `raw-changes.json`: the schema diff is exported
   so schema-sourced impacts and tasks have a source row to trace back to.
 - Task list output in the progressive-decomposition Stage 3/4 layout:

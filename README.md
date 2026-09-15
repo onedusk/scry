@@ -129,6 +129,7 @@ scry diff        # Collect + inventory + diff (with dedup)
 scry report      # Full pipeline through report generation
 scry init        # Generate starter scry.yaml
 scry doctor      # Preflight checks: manifest, env vars, source patterns, endpoints
+scry verify      # Validate operations against the pinned and target schemas; list deprecated members in use
 ```
 
 All commands accept `--project/-p` to specify a manifest path, `--verbose/-v` for debug output, and `--quiet/-q` to show only warnings and errors (the default is INFO-level progress logging). `collect`, `inventory`, and `diff` accept `--json/-j` for JSON output.
@@ -143,6 +144,10 @@ Reports are written to `{report_dir}/{YYYY-MM}/`:
 - **schema-changes.json** -- Machine-readable export of the schema diff (breaking, dangerous, and deprecation entries) when a schema was diffed
 - **docs/decompose/{platform}-changes-{YYYY-MM}/** -- Task index (`stage-3-task-index.md`) and per-milestone task specs (`tasks_m01.md`, ...) in the [progressive-decomposition](https://github.com/onedusk/pd) Stage 3/4 layout: one MODIFY task per affected file, grouped into Action required, Review, and Optional milestones, each with an outline and acceptance criteria. Pick up with `/decompose <name> review` or refine with `/decompose <name> 4`. The change plan draft is still written alongside.
 - **triage.json** -- Claude's per-entry judgments (relevance, severity, affected features, deadline, suggested action, rationale) when `triage_model` is set; the impact report header records the model and token usage
+
+## Verify
+
+`scry verify` is the deterministic acceptance check behind the schema tasks. It validates every inventoried GraphQL operation against the schema the project pins and against the newest published version, and lists members the operations use that the pinned version already deprecates (deprecation debt the diff alone cannot see). It exits 1 when any operation is invalid on either version, so it can gate a migration branch. `--json` prints the same result as data.
 
 ## Dedup
 
